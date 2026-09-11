@@ -1,83 +1,109 @@
 # ⚡ Flatimo Mail - High-Speed Disposable Temporary Email System
 
-**Flatimo Mail** adalah aplikasi web Temporary Email (T-Mail) modern dengan desain futuristik bertema **Yellow-Orange-Black Glow**, logo vektor petir beranimasi, dukungan multi-domain via DNS (Priority 1), built-in SMTP Server port 25, endpoint webhook untuk Cloudflare, dan Public REST API gratis.
+**Flatimo Mail** adalah sistem web Temporary Email (T-Mail) modern dan berkinerja tinggi dengan antarmuka futuristik bertema **Neon Glow / Pixel / Modern Theme**, dukungan multi-domain fleksibel, integrasi **Vercel Serverless + Cloudflare Email Routing**, serta built-in **SMTP Inbound Engine & Public REST API**.
 
 ![Flatimo Mail](https://img.shields.io/badge/Flatimo%20Mail-v1.0-FFB800?style=for-the-badge&logo=fastapi&logoColor=black)
+![Vercel Ready](https://img.shields.io/badge/Deploy-Vercel%20Serverless-000000?style=for-the-badge&logo=vercel&logoColor=white)
+![Cloudflare](https://img.shields.io/badge/Email%20Routing-Cloudflare%20Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-FF5500?style=for-the-badge)
-![Node.js](https://img.shields.io/badge/Node.js-24%2B-green?style=for-the-badge&logo=node.js)
+
+---
+
+## 📂 Struktur Direktori Proyek
+
+```
+Tmail-Flatimo/
+├── 📁 api/                   # Vercel Serverless function entry point
+│   └── index.js
+├── 📁 cloudflare/            # Cloudflare Worker Email Forwarder script
+│   └── email-worker.js
+├── 📁 docs/                  # Panduan & Dokumentasi lengkap
+│   ├── PANDUAN_DEPLOY_VERCEL.md
+│   └── PANDUAN_INSTALL_VPS.md
+├── 📁 public/                # Asset publik statis (favicon, icons)
+│   └── favicon.svg
+├── 📁 scripts/               # Utility scripts (VPS diagnostics, DNS helper)
+│   ├── deploy_theme_to_vps.js
+│   ├── deploy_to_vps.js
+│   ├── sync_dns_details.js
+│   └── ...
+├── 📁 server/                # Backend Node.js / Express engine
+│   ├── app.js               # Universal Express app logic
+│   ├── config.js            # Environment loader & config
+│   ├── db.js                # Database handler (Local JSON / Upstash Redis)
+│   ├── eventBus.js          # In-memory pub/sub for real-time events
+│   ├── index.js             # Standalone entry point (HTTP + SMTP server)
+│   ├── smtp.js              # Inbound SMTP listener (port 25)
+│   ├── telegramBot.js       # Telegram Bot integration
+│   ├── routes/              # REST API, SSE stream, & Webhook routes
+│   └── utils/               # E-mail parsers & storage cleaner
+├── 📁 src/                   # Frontend React SPA (Vite + Tailwind CSS)
+│   ├── components/          # UI Components (Inbox, Viewer, Domain, Theme, dll.)
+│   ├── context/             # React Theme & State Context
+│   ├── utils/               # Sound synthesizers, API clients
+│   ├── App.jsx              # Main App router & layout
+│   └── main.jsx             # React DOM root entry
+├── .env.example             # Contoh konfigurasi environment variables
+├── .gitignore               # Git ignored patterns
+├── index.html               # SPA HTML entry point
+├── package.json             # NPM dependencies & scripts
+├── postcss.config.js        # PostCSS configuration
+├── tailwind.config.js       # Tailwind CSS theme & design system
+├── vercel.json              # Konfigurasi routing Vercel Serverless
+└── vite.config.js           # Vite build bundler configuration
+```
 
 ---
 
 ## ✨ Fitur Unggulan
 
-- ⚡ **Desain Modern Cyberpunk Glow**: Background hitam pekat dengan aksen kuning neon, oranye api, efek glow dinamis, dan logo vektor petir SVG.
-- 📬 **Penerimaan Email DNS Super Cepat (Priority 1)**:
-  - Cukup hubungkan domain yang dibeli di registrar dengan memasukkan record `MX` (Priority 1) & `A`.
-  - Email masuk langsung diterima oleh mesin SMTP bawaan dalam hitungan milidetik.
-- 📡 **Real-time Live Stream (Server-Sent Events)**:
-  - Kotak masuk terupdate secara seketika (*instant push*) tanpa reload halaman, lengkap dengan efek suara notifikasi (*Web Audio API synthesized chime*).
-- 🌐 **Multi-Domain Manager**:
-  - Dukungan mengelola banyak domain sekaligus langsung dari UI atau konfigurasi `.env`.
-- 🛡️ **Penampil Email Lengkap & Aman**:
-  - Sandboxed HTML Reader (aman dari XSS & injection).
-  - Tampilan teks biasa (Plaintext) & Header RFC822.
-  - Dukungan pengunduhan lampiran file (*Attachments*) & file mentah (*Raw EML*).
-- 🚀 **Public REST API Gratis**:
-  - Dokumentasi API interaktif langsung di dalam web dengan contoh kode cURL, JavaScript, dan Python.
-- 🕒 **Auto-Retention Cleanup**:
-  - Pembersihan otomatis email kedaluwarsa setelah 24 jam (dapat disesuaikan di `.env`).
-- 🧪 **Simulasi Tes Email Masuk**:
-  - Tombol uji coba instan dengan template Google OTP, TikTok Verify, dan Invoice berkas untuk pengujian lokal.
+- ⚡ **Multi-Theme & Custom Font**: Pilihan tema Dark/Light/Pixel, font Pixel Retro & Modern, serta custom background dinamis.
+- 📬 **Dua Mode Penerimaan Email**:
+  - **Mode Serverless (Vercel + Cloudflare)**: 100% Gratis selamanya tanpa perlu sewa VPS.
+  - **Mode VPS / Dedicated Server**: Built-in SMTP port 25 bawaan dengan DNS Priority 1.
+- 📡 **Real-time 1-Second Auto Refresh & SSE**: Kotak masuk diperbarui secara otomatis setiap detik, lengkap dengan tombol refresh manual dan chime sound notifikasi.
+- 🌐 **Multi-Domain & Direct Link Routing**: Akses instan ke inbox spesifik melalui URL browser (contoh: `https://domainanda.com/username@domain.com`).
+- 🛡️ **Aman & Sandboxed**: Pembaca HTML terisolasi dari XSS injection, dukungan preview lampiran (Attachments), dan unduh file mentah (*Raw EML*).
+- 🤖 **Integrasi Notifikasi Telegram Bot**: Notifikasi instan ke Telegram saat email yang diminta masuk.
+- 📢 **Web Notification & Promo Modal**: Pop-up promosi / pengumuman kustom dengan teks, gambar, dan tombol On/Off.
+- 🚀 **Public REST API**: Endpoint lengkap untuk generate inbox, ambil pesan, stream SSE, dan webhook eksternal.
 
 ---
 
-## 🛠️ Panduan Instalasi & Menjalankan
+## 🚀 Pilihan Cara Deploy
 
-### 1. Prasyarat
-- Node.js versi 18+ atau lebih baru.
-- Port `3000` (Web UI & API) dan Port `25` (Inbound SMTP Server untuk live domain, atau `2525` saat development).
+### 1. Deploy ke Vercel (Gratis & Direkomendasikan) ⭐
+Sistem ini sudah dioptimalkan untuk Vercel Serverless Functions + Cloudflare Email Routing:
+👉 **[Baca Panduan Lengkap Deploy Vercel](docs/PANDUAN_DEPLOY_VERCEL.md)**
 
-### 2. Instalasi Dependensi
+### 2. Deploy ke VPS / Linux Server (Port 25 SMTP)
+Bagi yang ingin menjalankan full standalone instance di VPS Ubuntu/Debian menggunakan PM2:
+👉 **[Baca Panduan Lengkap Deploy VPS](docs/PANDUAN_INSTALL_VPS.md)**
+
+---
+
+## 🛠️ Menjalankan di Komputer Lokal (Development)
+
+### 1. Instalasi Dependensi
 ```bash
-git clone https://github.com/flatimo/tmail-flatimo.git
-cd Tmail-Flatimo
 npm install
 ```
 
-### 3. Konfigurasi Environment (`.env`)
-Salin file `.env.example` menjadi `.env` dan sesuaikan:
+### 2. Konfigurasi Environment (`.env`)
+Salin file `.env.example` ke `.env`:
 ```env
 PORT=3000
-SMTP_PORT=25
-NODE_ENV=production
-DOMAINS=flatimo.me,flatmail.dev,tmail.one
+SMTP_PORT=2525
+NODE_ENV=development
+DOMAINS=mailflatimo.web.id,flatimostore.my.id,kingcapcut.biz.id
 RETENTION_HOURS=24
-MAX_ATTACHMENT_SIZE_MB=15
 ```
 
-### 4. Menjalankan Aplikasi
-- **Mode Development**:
-  ```bash
-  npm run dev
-  ```
-- **Mode Production**:
-  ```bash
-  npm run build
-  npm start
-  ```
-- Buka browser di: `http://localhost:3000`
-
----
-
-## 🌐 Cara Menghubungkan Domain Baru (DNS Setup)
-
-Buka menu **DNS Management** di tempat Anda membeli domain (Niagahoster, Domainesia, Namecheap, Cloudflare, dll), lalu tambahkan 3 baris record berikut:
-
-| Tipe | Nama (Host) | Nilai (Value / Target) | Priority | Keterangan |
-|---|---|---|---|---|
-| **MX** | `@` | `mail.domainanda.com` | **`1`** | Prioritas utama nomor 1 untuk penerimaan super cepat |
-| **A** | `mail` | `IP_PUBLIC_VPS_ANDA` | - | Mengarahkan server mail ke IP VPS |
-| **A** | `@` | `IP_PUBLIC_VPS_ANDA` | - | Mengarahkan web tampilan ke IP VPS |
+### 3. Jalankan Aplikasi
+```bash
+npm run dev
+```
+Buka browser di: `http://localhost:3000`
 
 ---
 
@@ -96,18 +122,5 @@ Buka menu **DNS Management** di tempat Anda membeli domain (Niagahoster, Domaine
 
 ---
 
-## 🚀 Menjalankan Sebagai Service di VPS (PM2 / Systemd)
-
-Untuk menjalankan 24/7 di latar belakang server Linux/VPS:
-```bash
-# Menggunakan PM2
-npm install -g pm2
-npm run build
-pm2 start server/index.js --name "flatimo-mail"
-pm2 save
-pm2 startup
-```
-
----
-
-Dibuat dengan ⚡ oleh **Flatimo Mail Team**.
+## 📄 Lisensi
+Didistribusikan di bawah Lisensi MIT. Dikembangkan dengan ⚡ oleh **Flatimo**.

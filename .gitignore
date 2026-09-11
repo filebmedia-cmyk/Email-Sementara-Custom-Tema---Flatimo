@@ -32,6 +32,10 @@ data/
 *.eml
 temp/
 tmp/
+*.zip
+*.tar.gz
+*.rar
+*.bak
 
 # Editor & OS files
 .vscode/
@@ -43,3 +47,4 @@ tmp/
 *.sln
 *.sw?
 Thumbs.db
+
