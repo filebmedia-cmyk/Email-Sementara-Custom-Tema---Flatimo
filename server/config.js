@@ -22,4 +22,6 @@ export const config = {
   dataDir: process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/data' : path.join(__dirname, '..', 'data')),
   upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
   upstashRedisToken: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',
+  cfWorkerUrl: process.env.CLOUDFLARE_WORKER_URL || process.env.CF_WORKER_URL || '',
 };
+

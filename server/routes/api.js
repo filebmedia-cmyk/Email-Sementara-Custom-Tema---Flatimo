@@ -387,11 +387,18 @@ router.post('/token', (req, res) => {
 router.post('/custom', handleCreateInbox);
 
 // 6. GET /api/v1/inbox/:email/messages & Universal 3rd-party Bot aliases
-const handleGetInboxMessages = (req, res) => {
+const handleGetInboxMessages = async (req, res) => {
   // 1secmail compatibility check
   if (req.query.action === 'readMessage' && (req.query.id || req.params.id)) {
     const id = req.query.id || req.params.id;
-    const msg = db.getMessageById(id);
+    let msg = db.getMessageById(id);
+    if (!msg && config.cfWorkerUrl) {
+      try {
+        const cfRes = await fetch(`${config.cfWorkerUrl}/api/v1/messages/${encodeURIComponent(id)}`);
+        const cfData = await cfRes.json();
+        if (cfData && cfData.success && cfData.message) msg = cfData.message;
+      } catch (e) {}
+    }
     if (!msg) return res.status(404).json({ error: 'Message not found' });
     return res.json({
       id: msg.id,
@@ -428,7 +435,19 @@ const handleGetInboxMessages = (req, res) => {
     return res.status(400).json({ success: false, error: 'Email parameter is required' });
   }
 
-  const messages = db.getMessages(email);
+  let messages = db.getMessages(email);
+
+  // Cloudflare Worker KV Fallback
+  if (messages.length === 0 && config.cfWorkerUrl) {
+    try {
+      const cfRes = await fetch(`${config.cfWorkerUrl}/api/v1/inbox/${encodeURIComponent(email)}/messages`);
+      const cfData = await cfRes.json();
+      if (cfData && Array.isArray(cfData.messages) && cfData.messages.length > 0) {
+        messages = cfData.messages;
+      }
+    } catch (e) {}
+  }
+
   const unreadCount = messages.filter(m => !m.read).length;
 
   // If 1secmail style is requested (query action=getMessages) or requested raw array:
@@ -466,9 +485,14 @@ router.get('/messages', handleGetInboxMessages);
 router.get('/emails', handleGetInboxMessages);
 
 // 7. DELETE /api/v1/inbox/:email - Clear all messages in inbox
-router.delete('/inbox/:email', (req, res) => {
+router.delete('/inbox/:email', async (req, res) => {
   const email = req.params.email.toLowerCase().trim();
   db.deleteInbox(email);
+  if (config.cfWorkerUrl) {
+    try {
+      await fetch(`${config.cfWorkerUrl}/api/v1/inbox/${encodeURIComponent(email)}`, { method: 'DELETE' });
+    } catch (e) {}
+  }
 
   res.json({
     success: true,
@@ -477,14 +501,24 @@ router.delete('/inbox/:email', (req, res) => {
 });
 
 // 8. GET /api/v1/messages/:id - Get full message detail
-const handleGetMessageDetail = (req, res) => {
+const handleGetMessageDetail = async (req, res) => {
   const param = req.params.id;
   // If param contains '@', it is an email address inquiry (e.g. /messages/user@domain.com)!
   if (param && param.includes('@')) {
     return handleGetInboxMessages(req, res);
   }
 
-  const msg = db.getMessageById(param);
+  let msg = db.getMessageById(param);
+  if (!msg && config.cfWorkerUrl) {
+    try {
+      const cfRes = await fetch(`${config.cfWorkerUrl}/api/v1/messages/${encodeURIComponent(param)}`);
+      const cfData = await cfRes.json();
+      if (cfData && cfData.success && cfData.message) {
+        msg = cfData.message;
+      }
+    } catch (e) {}
+  }
+
   if (!msg) {
     return res.status(404).json({ success: false, error: 'Message not found or expired' });
   }
@@ -497,6 +531,7 @@ const handleGetMessageDetail = (req, res) => {
 };
 router.get('/messages/:id', handleGetMessageDetail);
 router.get('/message/:id', handleGetMessageDetail);
+
 
 // 9. DELETE /api/v1/messages/:id - Delete single message
 router.delete('/messages/:id', (req, res) => {
