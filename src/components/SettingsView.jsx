@@ -18,6 +18,8 @@ import {
   AlertCircle, 
   Bot, 
   Globe,
+  Plus,
+  Trash2,
   Megaphone,
   Sparkles,
   Image as ImageIcon,
@@ -26,10 +28,11 @@ import {
   HelpCircle
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
-import { fetchSettings, updateSettings, verifySettingsPin } from '../utils/api';
+import { fetchSettings, updateSettings, verifySettingsPin, fetchDomains, addDomain, deleteDomain } from '../utils/api';
 import PromoModal from './PromoModal';
 
-export default function SettingsView({ addToast, onSettingsUpdated }) {
+export default function SettingsView({ addToast, onSettingsUpdated, onDomainsChange, initialDomains = [] }) {
+
   const { primaryColor, glowEnabled } = useTheme();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -72,10 +75,33 @@ export default function SettingsView({ addToast, onSettingsUpdated }) {
   const [popupFrequency, setPopupFrequency] = useState('once_per_session'); // 'once_per_session' | 'always'
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // Load current settings from backend
+  // Domain Management State
+  const [domainList, setDomainList] = useState(initialDomains);
+  const [newDomainInput, setNewDomainInput] = useState('');
+  const [isAddingDomain, setIsAddingDomain] = useState(false);
+  const [deletingDomain, setDeletingDomain] = useState(null);
+  const [isLoadingDomains, setIsLoadingDomains] = useState(false);
+
+  const loadDomainList = async () => {
+    setIsLoadingDomains(true);
+    try {
+      const res = await fetchDomains();
+      if (res.success && Array.isArray(res.domains)) {
+        setDomainList(res.domains);
+        if (onDomainsChange) onDomainsChange(res.domains);
+      }
+    } catch (e) {
+      console.error('Error loading domains:', e);
+    } finally {
+      setIsLoadingDomains(false);
+    }
+  };
+
+  // Load current settings & domains from backend
   useEffect(() => {
     async function load() {
       try {
+        loadDomainList();
         const res = await fetchSettings();
         if (res.success && res.settings) {
           const s = res.settings;
@@ -104,6 +130,7 @@ export default function SettingsView({ addToast, onSettingsUpdated }) {
     }
     load();
   }, []);
+
 
   // Verify PIN for Settings Lock Gate
   const handleVerifyPin = async (e) => {
@@ -203,6 +230,60 @@ export default function SettingsView({ addToast, onSettingsUpdated }) {
     }
   };
 
+  // Domain Management Handlers
+  const handleAddNewDomain = async (e) => {
+    if (e) e.preventDefault();
+    const clean = newDomainInput.trim().toLowerCase().replace(/^(https?:\/\/)/, '').replace(/\/$/, '');
+    if (!clean || !clean.includes('.') || clean.length < 3) {
+      if (addToast) addToast('error', 'Format Domain Salah', 'Masukkan format domain yang valid (contoh: domainku.com)');
+      return;
+    }
+    if (domainList.includes(clean)) {
+      if (addToast) addToast('error', 'Domain Sudah Ada', `Domain @${clean} sudah terdaftar di sistem.`);
+      return;
+    }
+    setIsAddingDomain(true);
+    try {
+      const res = await addDomain(clean);
+      if (res.success) {
+        const updated = res.domains || [...domainList, clean];
+        setDomainList(updated);
+        setNewDomainInput('');
+        if (onDomainsChange) onDomainsChange(updated);
+        if (addToast) addToast('success', 'Domain Ditambahkan ⚡', `Domain @${clean} berhasil ditambahkan dan aktif.`);
+      } else {
+        if (addToast) addToast('error', 'Gagal Menambah Domain', res.error || 'Terjadi kesalahan');
+      }
+    } catch (err) {
+      if (addToast) addToast('error', 'Gagal Menambah Domain', err.message);
+    } finally {
+      setIsAddingDomain(false);
+    }
+  };
+
+  const handleDeleteDomain = async (domToDelete) => {
+    if (domainList.length <= 1) {
+      if (addToast) addToast('error', 'Tidak Dapat Dihapus', 'Minimal 1 domain aktif harus dipertahankan di sistem.');
+      return;
+    }
+    setDeletingDomain(domToDelete);
+    try {
+      const res = await deleteDomain(domToDelete);
+      if (res.success) {
+        const updated = res.domains || domainList.filter(d => d !== domToDelete);
+        setDomainList(updated);
+        if (onDomainsChange) onDomainsChange(updated);
+        if (addToast) addToast('success', 'Domain Dihapus', `Domain @${domToDelete} telah berhasil dihapus.`);
+      } else {
+        if (addToast) addToast('error', 'Gagal Menghapus Domain', res.error || 'Terjadi kesalahan');
+      }
+    } catch (err) {
+      if (addToast) addToast('error', 'Gagal Menghapus Domain', err.message);
+    } finally {
+      setDeletingDomain(null);
+    }
+  };
+
   // Generate Random Key
   const handleGenerateKey = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -212,6 +293,7 @@ export default function SettingsView({ addToast, onSettingsUpdated }) {
     }
     setApiKey(rand);
   };
+
 
   // Copy helpers
   const handleCopyKey = () => {
@@ -435,7 +517,132 @@ export default function SettingsView({ addToast, onSettingsUpdated }) {
       {/* Grid Settings Cards */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
+        {/* --- CARD 0: KELOLA DOMAIN AKTIF & HAPUS DOMAIN (FULL WIDTH) --- */}
+        <div 
+          className="lg:col-span-2 rounded-2xl bg-dark-900 border p-5 sm:p-7 space-y-5 transition-all"
+          style={{
+            borderColor: glowEnabled ? `${primaryColor}40` : 'rgba(255, 255, 255, 0.1)',
+            boxShadow: glowEnabled ? `0 0 25px ${primaryColor}15` : undefined
+          }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+            <div className="flex items-center gap-3">
+              <div 
+                className="p-2.5 rounded-xl border shrink-0"
+                style={{
+                  backgroundColor: `${primaryColor}20`,
+                  borderColor: `${primaryColor}50`,
+                  color: primaryColor
+                }}
+              >
+                <Globe className="w-5 h-5 icon-twinkle" />
+              </div>
+              <div>
+                <h2 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
+                  <span>Kelola Domain Aktif & Hapus Domain</span>
+                  <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                    {domainList.length} Domain Aktif ⚡
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Hapus domain yang tidak terpakai atau tambahkan domain baru ke dalam sistem web.
+                </p>
+              </div>
+            </div>
+
+            <button
+              onClick={loadDomainList}
+              disabled={isLoadingDomains}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-dark-950 border border-slate-800 hover:border-slate-700 text-xs font-bold text-slate-300 hover:text-white transition-all self-start sm:self-auto cursor-pointer"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoadingDomains ? 'animate-spin' : ''}`} />
+              <span>Segarkan</span>
+            </button>
+          </div>
+
+          {/* Form Tambah Domain Baru */}
+          <form onSubmit={handleAddNewDomain} className="flex flex-col sm:flex-row items-center gap-2.5">
+            <div className="relative w-full flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500 text-xs font-bold font-mono">
+                @
+              </div>
+              <input
+                type="text"
+                value={newDomainInput}
+                onChange={(e) => setNewDomainInput(e.target.value)}
+                placeholder="Tambah domain baru... (contoh: domainku.com atau mail.domainku.com)"
+                className="w-full pl-8 pr-4 py-2.5 rounded-xl bg-dark-950 border border-slate-800 text-white text-xs font-mono placeholder:text-slate-500 focus:outline-none focus:border-white transition-colors"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={isAddingDomain || !newDomainInput.trim()}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-xs font-black text-dark-950 transition-all active:scale-95 disabled:opacity-50 cursor-pointer shrink-0 shadow-md"
+              style={{
+                backgroundColor: primaryColor,
+                boxShadow: glowEnabled ? `0 0 15px ${primaryColor}50` : undefined
+              }}
+            >
+              {isAddingDomain ? (
+                <div className="w-4 h-4 border-2 border-dark-950 border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Tambah Domain</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* List Domain Aktif Card Grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+            {domainList.map((dom) => {
+              const isDeleting = deletingDomain === dom;
+              const isSingleLeft = domainList.length <= 1;
+
+              return (
+                <div
+                  key={dom}
+                  className="flex items-center justify-between p-3.5 rounded-xl bg-dark-950 border border-slate-800/80 hover:border-slate-700 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    <span className="font-mono text-xs font-bold text-slate-200 truncate">
+                      @{dom}
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteDomain(dom)}
+                    disabled={isDeleting || isSingleLeft}
+                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      isSingleLeft 
+                        ? 'opacity-30 cursor-not-allowed text-slate-500' 
+                        : 'text-rose-400 hover:text-white bg-rose-500/10 hover:bg-rose-500 border border-rose-500/20 active:scale-95 cursor-pointer'
+                    }`}
+                    title={isSingleLeft ? 'Minimal 1 domain aktif harus ada' : `Hapus domain @${dom}`}
+                  >
+                    {isDeleting ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5" />
+                    )}
+                    <span className="text-[11px]">{isDeleting ? 'Menghapus...' : 'Hapus'}</span>
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <p className="text-[11px] text-slate-500">
+            💡 Domain yang Anda hapus tidak akan muncul lagi di pilihan pembuatan email. Domain baru yang terhubung ke Cloudflare Worker akan otomatis terdeteksi saat ada email masuk.
+          </p>
+        </div>
+
         {/* --- CARD 1: MODE REST API & ENDPOINT (PUBLIK / PRIVAT) --- */}
+
         <div 
           className="rounded-2xl bg-dark-900 border p-5 sm:p-6 space-y-4 transition-all"
           style={{

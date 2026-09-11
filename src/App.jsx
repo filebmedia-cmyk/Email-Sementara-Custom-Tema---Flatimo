@@ -551,10 +551,12 @@ export default function App() {
           <ApiDocs currentEmail={currentEmail} />
         )}
 
-        {/* TAB 3: PENGATURAN SISTEM (API KEY, WEBHOOK & PASSWORD ACCESS LOCK) */}
+        {/* TAB 3: PENGATURAN SISTEM (API KEY, WEBHOOK, DOMAIN & PASSWORD ACCESS LOCK) */}
         {activeTab === 'settings' && (
           <SettingsView 
             addToast={addToast} 
+            initialDomains={domains}
+            onDomainsChange={(newDoms) => setDomains(newDoms)}
             onSettingsUpdated={(updated) => {
               if (updated.httpDocsMode) setHttpDocsMode(updated.httpDocsMode);
               if (updated.isPasswordProtected !== undefined) setIsPasswordProtected(Boolean(updated.isPasswordProtected));
