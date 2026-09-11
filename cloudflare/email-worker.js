@@ -18,14 +18,26 @@ const VERCEL_WEBHOOK_URL = 'https://YOUR-APP.vercel.app/api/v1/webhook/incoming'
 const WEBHOOK_SECRET = '';
 
 export default {
+  // 1. HTTP Fetch Handler (mencegah error "No fetch handler" saat dites via browser / dashboard)
+  async fetch(request, env, ctx) {
+    return new Response(JSON.stringify({
+      status: 'online',
+      service: 'Flatimo Email Routing Worker',
+      message: 'Worker is running and listening for incoming emails ⚡'
+    }), {
+      headers: { 'Content-Type': 'application/json' }
+    });
+  },
+
+  // 2. Email Event Handler (menerima email masuk dari Cloudflare Email Routing)
   async email(message, env, ctx) {
     try {
-      // 1. Baca raw email MIME stream
+      // Baca raw email MIME stream
       const rawEmail = await new Response(message.raw).text();
       const targetUrl = env.VERCEL_WEBHOOK_URL || VERCEL_WEBHOOK_URL;
       const secret = env.WEBHOOK_SECRET || WEBHOOK_SECRET;
 
-      // 2. Kirim raw email ke Webhook Vercel
+      // Kirim raw email ke Webhook Vercel
       const response = await fetch(targetUrl, {
         method: 'POST',
         headers: {
@@ -47,3 +59,4 @@ export default {
     }
   }
 };
+
