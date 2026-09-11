@@ -75,7 +75,16 @@ class DatabaseStore {
       totalAttachments: 0,
       startedAt: new Date().toISOString()
     };
-    this.load();
+    this._initPromise = this.load();
+  }
+
+  async ready() {
+    if (config.upstashRedisUrl && config.upstashRedisToken) {
+      await this.load();
+    } else {
+      await this._initPromise;
+    }
+    return this;
   }
 
   async load() {
@@ -118,17 +127,15 @@ class DatabaseStore {
         if (data.stats) {
           this.stats = { ...this.stats, ...data.stats };
         }
-        console.log(`[DB] Database loaded: ${this.messages.size} messages, ${this.inboxes.size} inboxes, ${this.domains.size} domains.`);
       } else {
         this.save();
       }
     } catch (err) {
-      console.error('[DB] Error loading database, initializing clean state:', err.message);
-      this.save();
+      console.error('[DB] Error loading database:', err.message);
     }
   }
 
-  save() {
+  async saveAsync() {
     try {
       const data = {
         domains: Array.from(this.domains),
@@ -139,19 +146,22 @@ class DatabaseStore {
         lastSaved: new Date().toISOString()
       };
 
-      // Save to local file
       try {
         fs.writeFileSync(dbFilePath, JSON.stringify(data, null, 2), 'utf8');
       } catch (e) {}
 
-      // Save to Upstash Redis asynchronously if configured
       if (config.upstashRedisUrl && config.upstashRedisToken) {
-        upstashSet('flatimo_mail_db', data).catch(() => {});
+        await upstashSet('flatimo_mail_db', data);
       }
     } catch (err) {
       console.error('[DB] Error persisting database:', err.message);
     }
   }
+
+  save() {
+    this.saveAsync().catch(() => {});
+  }
+
 
   // Settings Management
   getSettings() {

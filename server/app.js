@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
+import { db } from './db.js';
 import apiRouter from './routes/api.js';
 import streamRouter from './routes/stream.js';
 import webhookRouter from './routes/webhook.js';
@@ -22,6 +23,14 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// Ensure DB is ready & synced
+app.use(async (req, res, next) => {
+  try {
+    await db.ready();
+  } catch (e) {}
+  next();
+});
+
 // Request Logger
 app.use((req, res, next) => {
   if (!req.path.includes('/stream')) {
@@ -29,6 +38,7 @@ app.use((req, res, next) => {
   }
   next();
 });
+
 
 // Universal API Routes (/api/v1 and legacy /api compatibility for all bots)
 app.use('/api/v1', apiRouter);

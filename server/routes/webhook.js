@@ -105,11 +105,15 @@ router.post('/incoming', async (req, res) => {
       }
     }
 
+    // Ensure async persistence in cloud KV / Redis before closing Lambda
+    await db.saveAsync();
+
     res.json({
       success: true,
       message: `Processed email for ${savedMessages.length} recipients`,
       recipients: savedMessages.map(m => m.inboxEmail)
     });
+
   } catch (err) {
     console.error('[Webhook] Inbound processing error:', err);
     res.status(500).json({ success: false, error: 'Internal error processing webhook' });
