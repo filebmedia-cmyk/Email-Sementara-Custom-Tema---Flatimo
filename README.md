@@ -43,7 +43,6 @@ Tmail-Flatimo/
 │   ├── utils/               # Sound synthesizers, API clients
 │   ├── App.jsx              # Main App router & layout
 │   └── main.jsx             # React DOM root entry
-├── .env.example             # Contoh konfigurasi environment variables
 ├── .gitignore               # Git ignored patterns
 ├── index.html               # SPA HTML entry point
 ├── package.json             # NPM dependencies & scripts
@@ -67,7 +66,6 @@ Tmail-Flatimo/
 - 🤖 **Integrasi Notifikasi Telegram Bot**: Notifikasi instan ke Telegram saat email yang diminta masuk.
 - 📢 **Web Notification & Promo Modal**: Pop-up promosi / pengumuman kustom dengan teks, gambar, dan tombol On/Off.
 
-
 ---
 
 ## 🚀 Pilihan Cara Deploy
@@ -90,7 +88,7 @@ npm install
 ```
 
 ### 2. Konfigurasi Environment (`.env`)
-Salin file `.env.example` ke `.env`:
+Buat file `.env` dengan konfigurasi berikut:
 ```env
 PORT=3000
 SMTP_PORT=2525
