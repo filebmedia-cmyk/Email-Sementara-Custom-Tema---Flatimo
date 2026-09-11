@@ -87,17 +87,7 @@ Bagi yang ingin menjalankan full standalone instance di VPS Ubuntu/Debian menggu
 npm install
 ```
 
-### 2. Konfigurasi Environment (`.env`)
-Buat file `.env` dengan konfigurasi berikut:
-```env
-PORT=3000
-SMTP_PORT=2525
-NODE_ENV=development
-DOMAINS=mailflatimo.web.id,flatimostore.my.id,kingcapcut.biz.id
-RETENTION_HOURS=24
-```
-
-### 3. Jalankan Aplikasi
+### 2. Jalankan Aplikasi
 ```bash
 npm run dev
 ```
