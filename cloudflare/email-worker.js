@@ -1,12 +1,18 @@
 /**
- * CLOUDFLARE EMAIL ROUTING + KV STANDALONE ENGINE - FLATIMO MAIL
+ * CLOUDFLARE EMAIL ROUTING STANDALONE WORKER - FLATIMO MAIL
  * 
  * Fitur:
- * 1. Menerima email dari Cloudflare Email Routing.
- * 2. Menyimpan pesan secara otomatis ke Cloudflare KV (Gratis 100.000 read/hari).
- * 3. Menyediakan REST API cepat (Inbox & Messages) dengan CORS penuh.
- * 4. Mendukung Auto-Discovery Domain baru.
+ * - 100% Siap Pakai tanpa perlu setting database luar / KV manual.
+ * - Menerima email dari Cloudflare Email Routing.
+ * - Otomatis menyimpan pesan di Memory Edge & meneruskannya ke Vercel Webhook.
  */
+
+// Memory Cache di Edge Cloudflare (Bekerja otomatis tanpa perlu buat KV manual)
+const INBOX_CACHE = new Map();
+const MSG_CACHE = new Map();
+
+// Default Vercel Webhook URL
+const DEFAULT_VERCEL_WEBHOOK = 'https://email-sementara-custom-tema-flatimo.vercel.app/api/v1/webhook/incoming';
 
 // Helper Parser Sederhana untuk MIME Header & Body di Cloudflare Edge
 function parseEmailMime(raw, fallbackRecipient, fallbackSender) {
@@ -82,11 +88,16 @@ export default {
       const inboxMatch = path.match(/^\/api\/v1\/inbox\/([^/]+)\/messages$/);
       if (inboxMatch && request.method === 'GET') {
         const email = decodeURIComponent(inboxMatch[1]).toLowerCase().trim();
-        if (!KV) {
-          return new Response(JSON.stringify({ success: true, email, total: 0, messages: [] }), { headers: corsHeaders });
+        let messages = [];
+
+        if (KV) {
+          const data = await KV.get(`inbox:${email}`, 'json');
+          if (Array.isArray(data)) messages = data;
         }
-        const inboxData = await KV.get(`inbox:${email}`, 'json');
-        const messages = Array.isArray(inboxData) ? inboxData : [];
+        if (messages.length === 0 && INBOX_CACHE.has(email)) {
+          messages = INBOX_CACHE.get(email) || [];
+        }
+
         return new Response(JSON.stringify({
           success: true,
           email,
@@ -100,10 +111,15 @@ export default {
       const msgMatch = path.match(/^\/api\/v1\/messages\/([^/]+)$/);
       if (msgMatch && request.method === 'GET') {
         const id = msgMatch[1];
-        if (!KV) {
-          return new Response(JSON.stringify({ success: false, error: 'Message not found' }), { status: 404, headers: corsHeaders });
+        let msg = null;
+
+        if (KV) {
+          msg = await KV.get(`msg:${id}`, 'json');
         }
-        const msg = await KV.get(`msg:${id}`, 'json');
+        if (!msg && MSG_CACHE.has(id)) {
+          msg = MSG_CACHE.get(id);
+        }
+
         if (!msg) {
           return new Response(JSON.stringify({ success: false, error: 'Message not found or expired' }), { status: 404, headers: corsHeaders });
         }
@@ -117,12 +133,11 @@ export default {
         if (KV) {
           const list = await KV.get(`inbox:${email}`, 'json');
           if (Array.isArray(list)) {
-            for (const m of list) {
-              await KV.delete(`msg:${m.id}`);
-            }
+            for (const m of list) await KV.delete(`msg:${m.id}`);
           }
           await KV.delete(`inbox:${email}`);
         }
+        INBOX_CACHE.delete(email);
         return new Response(JSON.stringify({ success: true, message: `Inbox ${email} deleted` }), { headers: corsHeaders });
       }
 
@@ -141,13 +156,21 @@ export default {
           }
           await KV.delete(`msg:${id}`);
         }
+        MSG_CACHE.delete(id);
+        for (const [email, list] of INBOX_CACHE.entries()) {
+          const updated = list.filter(m => m.id !== id);
+          if (updated.length !== list.length) {
+            INBOX_CACHE.set(email, updated);
+          }
+        }
         return new Response(JSON.stringify({ success: true, message: 'Message deleted' }), { headers: corsHeaders });
       }
 
-      // Default Status Ping
+      // Status Monitor
       return new Response(JSON.stringify({
         status: 'online',
-        service: 'Flatimo Cloudflare Email & KV Storage Engine ⚡',
+        service: 'Flatimo Cloudflare Email Engine ⚡',
+        totalInboxesCached: INBOX_CACHE.size,
         kvConnected: Boolean(KV),
         time: new Date().toISOString()
       }), { headers: corsHeaders });
@@ -157,7 +180,7 @@ export default {
     }
   },
 
-  // 2. EMAIL EVENT HANDLER (Cloudflare Email Routing Ingestion)
+  // 2. EMAIL EVENT HANDLER (Cloudflare Email Routing)
   async email(message, env, ctx) {
     try {
       const rawEmail = await new Response(message.raw).text();
@@ -180,29 +203,30 @@ export default {
         size: rawEmail.length
       };
 
-      // 1. Simpan ke Cloudflare KV jika namespace TMAIL_KV sudah di-bind
-      if (env.TMAIL_KV) {
-        // Simpan detail pesan (Auto-expire 24 jam = 86400 detik)
-        await env.TMAIL_KV.put(`msg:${msgId}`, JSON.stringify(msgData), { expirationTtl: 86400 });
+      // 1. Simpan di Memory Cache
+      MSG_CACHE.set(msgId, msgData);
+      const existingList = INBOX_CACHE.get(recipient) || [];
+      existingList.unshift({
+        id: msgId,
+        inboxEmail: recipient,
+        from: msgData.from,
+        subject: msgData.subject,
+        date: msgData.date,
+        snippet: (msgData.text || '').substring(0, 120),
+        hasAttachments: false
+      });
+      INBOX_CACHE.set(recipient, existingList.slice(0, 50));
 
-        // Update list inbox penerima
-        const existingList = (await env.TMAIL_KV.get(`inbox:${recipient}`, 'json')) || [];
-        existingList.unshift({
-          id: msgId,
-          inboxEmail: recipient,
-          from: msgData.from,
-          subject: msgData.subject,
-          date: msgData.date,
-          snippet: (msgData.text || '').substring(0, 120),
-          hasAttachments: false
-        });
+      // 2. Simpan di KV jika ada
+      if (env.TMAIL_KV) {
+        await env.TMAIL_KV.put(`msg:${msgId}`, JSON.stringify(msgData), { expirationTtl: 86400 });
         await env.TMAIL_KV.put(`inbox:${recipient}`, JSON.stringify(existingList.slice(0, 50)), { expirationTtl: 86400 });
-        console.log(`[KV Success] Saved message ${msgId} for ${recipient}`);
       }
 
-      // 2. Teruskan juga ke Vercel Webhook jika URL diisi
-      if (env.VERCEL_WEBHOOK_URL) {
-        fetch(env.VERCEL_WEBHOOK_URL, {
+      // 3. Teruskan ke Webhook Vercel
+      const targetWebhook = env.VERCEL_WEBHOOK_URL || DEFAULT_VERCEL_WEBHOOK;
+      if (targetWebhook) {
+        fetch(targetWebhook, {
           method: 'POST',
           headers: {
             'Content-Type': 'text/plain',
@@ -213,10 +237,10 @@ export default {
         }).catch(() => {});
       }
 
+      console.log(`[Worker Success] Email from ${message.from} to ${recipient} processed.`);
+
     } catch (err) {
       console.error('[Worker Email Error]', err.message);
     }
   }
 };
-
-
