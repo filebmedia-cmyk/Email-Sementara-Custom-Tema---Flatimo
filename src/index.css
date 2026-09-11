@@ -1,0 +1,187 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --theme-primary: #FFB800;
+  --theme-secondary: #FF5722;
+  --theme-glow: rgba(255, 184, 0, 0.45);
+  --theme-bg: #06070a;
+  --theme-card: #0b0c12;
+  --theme-text: #F1F5F9;
+  --theme-subtext: #94A3B8;
+  --theme-border: rgba(255, 255, 255, 0.08);
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    background-color: var(--theme-bg, #06070a);
+    color: var(--theme-text, #f1f5f9);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    overflow-x: hidden;
+    transition: background-color 0.4s ease, color 0.4s ease;
+  }
+}
+
+/* Custom Dynamic Theme Utilities */
+.theme-btn-primary {
+  background: linear-gradient(135deg, var(--theme-primary, #FFB800) 0%, var(--theme-secondary, #FF5722) 100%);
+  color: #0b0c12;
+  box-shadow: 0 0 20px var(--theme-glow, rgba(255, 184, 0, 0.35));
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  touch-action: manipulation;
+}
+
+.theme-btn-primary:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 0 32px var(--theme-glow, rgba(255, 184, 0, 0.6));
+  transform: translateY(-1.5px) scale(1.01);
+}
+
+.theme-btn-primary:active {
+  transform: translateY(0.5px) scale(0.98);
+}
+
+.theme-border-glow {
+  border: 1px solid var(--theme-primary, #FFB800);
+  box-shadow: 0 0 18px var(--theme-glow, rgba(255, 184, 0, 0.3));
+}
+
+.theme-text-primary {
+  color: var(--theme-primary, #FFB800);
+}
+
+/* --- VECTOR ICON ANIMATIONS & MOTION SYSTEM --- */
+@keyframes icon-float {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(3deg);
+  }
+}
+
+@keyframes icon-pulse-subtle {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+    filter: drop-shadow(0 0 8px var(--theme-glow, rgba(255, 184, 0, 0.6)));
+  }
+}
+
+@keyframes icon-twinkle {
+  0%, 100% {
+    transform: rotate(0deg) scale(1);
+    opacity: 0.85;
+  }
+  25% {
+    transform: rotate(8deg) scale(1.15);
+    opacity: 1;
+  }
+  50% {
+    transform: rotate(0deg) scale(0.95);
+    opacity: 0.75;
+  }
+  75% {
+    transform: rotate(-8deg) scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes icon-shake {
+  0%, 100% { transform: rotate(0deg); }
+  20% { transform: rotate(-14deg); }
+  40% { transform: rotate(12deg); }
+  60% { transform: rotate(-8deg); }
+  80% { transform: rotate(6deg); }
+}
+
+@keyframes icon-wobble {
+  0%, 100% { transform: scale(1) rotate(0deg); }
+  25% { transform: scale(1.15) rotate(-10deg); }
+  50% { transform: scale(1.15) rotate(10deg); }
+  75% { transform: scale(1.1) rotate(-5deg); }
+}
+
+@keyframes icon-spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes icon-bounce-x {
+  0%, 100% { transform: translateX(0); }
+  50% { transform: translateX(-4px); }
+}
+
+/* Reusable Icon Utility Classes */
+.icon-float {
+  animation: icon-float 3.2s ease-in-out infinite;
+}
+
+.icon-pulse {
+  animation: icon-pulse-subtle 2.4s ease-in-out infinite;
+}
+
+.icon-twinkle {
+  animation: icon-twinkle 3.6s ease-in-out infinite;
+}
+
+.icon-spin-slow {
+  animation: icon-spin-slow 12s linear infinite;
+}
+
+.icon-interactive {
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.group:hover .icon-interactive,
+button:hover .icon-interactive,
+a:hover .icon-interactive {
+  transform: scale(1.18) translateY(-1px);
+  filter: drop-shadow(0 0 6px var(--theme-glow, rgba(255, 184, 0, 0.5)));
+}
+
+.group:hover .icon-shake,
+button:hover .icon-shake {
+  animation: icon-shake 0.6s ease-in-out;
+}
+
+.group:hover .icon-wobble,
+button:hover .icon-wobble {
+  animation: icon-wobble 0.6s ease-in-out;
+}
+
+.group:hover .icon-bounce-x,
+button:hover .icon-bounce-x {
+  animation: icon-bounce-x 0.8s ease-in-out infinite;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--theme-bg, #0b0c12);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #232738;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--theme-primary, #ffb800);
+}

@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <rect width="32" height="32" rx="8" fill="#0B0C12" />
+  <path d="M18 3L6 18H16L14 29L26 14H16L18 3Z" fill="url(#lightningGrad)" filter="url(#glow)" />
+  <defs>
+    <linearGradient id="lightningGrad" x1="6" y1="3" x2="26" y2="29" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE600" />
+      <stop offset="0.5" stop-color="#FFB800" />
+      <stop offset="1" stop-color="#FF5500" />
+    </linearGradient>
+    <filter id="glow" x="2" y="-1" width="28" height="34" filterUnits="userSpaceOnUse">
+      <feGaussianBlur stdDeviation="1.5" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+</svg>
