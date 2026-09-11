@@ -60,13 +60,13 @@ Tmail-Flatimo/
 - ⚡ **Multi-Theme & Custom Font**: Pilihan tema Dark/Light/Pixel, font Pixel Retro & Modern, serta custom background dinamis.
 - 📬 **Dua Mode Penerimaan Email**:
   - **Mode Serverless (Vercel + Cloudflare)**: 100% Gratis selamanya tanpa perlu sewa VPS.
-  - **Mode VPS / Dedicated Server**: Built-in SMTP port 25 bawaan dengan DNS Priority 1.
+  - **Mode VPS / Dedicated Server**: Built-in SMTP port 25 bawaan.
 - 📡 **Real-time 1-Second Auto Refresh & SSE**: Kotak masuk diperbarui secara otomatis setiap detik, lengkap dengan tombol refresh manual dan chime sound notifikasi.
 - 🌐 **Multi-Domain & Direct Link Routing**: Akses instan ke inbox spesifik melalui URL browser (contoh: `https://domainanda.com/username@domain.com`).
 - 🛡️ **Aman & Sandboxed**: Pembaca HTML terisolasi dari XSS injection, dukungan preview lampiran (Attachments), dan unduh file mentah (*Raw EML*).
 - 🤖 **Integrasi Notifikasi Telegram Bot**: Notifikasi instan ke Telegram saat email yang diminta masuk.
 - 📢 **Web Notification & Promo Modal**: Pop-up promosi / pengumuman kustom dengan teks, gambar, dan tombol On/Off.
-- 🚀 **Public REST API**: Endpoint lengkap untuk generate inbox, ambil pesan, stream SSE, dan webhook eksternal.
+
 
 ---
 
@@ -107,20 +107,6 @@ Buka browser di: `http://localhost:3000`
 
 ---
 
-## 📖 Ringkasan Public REST API
-
-| Method | Endpoint | Deskripsi |
-|---|---|---|
-| `GET` | `/api/v1/domains` | Mengambil daftar domain yang aktif |
-| `GET` | `/api/v1/inbox/generate` | Membuat alamat email acak secara instan |
-| `POST` | `/api/v1/inbox/create` | Membuat alamat email custom (`{"username": "...", "domain": "..."}`) |
-| `GET` | `/api/v1/inbox/:email/messages` | Mengambil semua daftar pesan di inbox tersebut |
-| `GET` | `/api/v1/messages/:id` | Mengambil detail pesan (HTML, Teks, Lampiran) |
-| `DELETE` | `/api/v1/inbox/:email` | Menghapus inbox dan seluruh pesannya |
-| `GET` | `/api/v1/inbox/:email/stream` | Server-Sent Events (SSE) stream untuk notifikasi real-time |
-| `POST` | `/api/v1/webhook/incoming` | Endpoint penerima webhook (Cloudflare / Eksternal) |
-
----
-
 ## 📄 Lisensi
 Didistribusikan di bawah Lisensi MIT. Dikembangkan dengan ⚡ oleh **Flatimo**.
+

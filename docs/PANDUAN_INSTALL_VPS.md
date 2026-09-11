@@ -116,19 +116,7 @@ ufw --force enable
 
 ---
 
-## 🌐 3. Konfigurasi DNS di Tempat Beli Domain
-
-Buka menu **DNS Management** di registrar tempat Anda membeli domain (Niagahoster, Domainesia, Namecheap, Cloudflare, dll), lalu masukkan **3 record** ini:
-
-| Tipe Record | Nama / Host | Target / Nilai (Value) | Priority | TTL |
-|---|---|---|---|---|
-| **`MX`** | **`@`** | **`mail.flatimostore.my.id`** | **`1`** | `Auto / 3600` |
-| **`A`** | **`mail`** | **`IP_VPS_ANDA`** | `-` | `Auto / 3600` |
-| **`A`** | **`@`** | **`IP_VPS_ANDA`** | `-` | `Auto / 3600` |
-
----
-
-## 🛠️ 4. Perintah Berguna PM2 untuk Monitoring
+## 🛠️ 3. Perintah Berguna PM2 untuk Monitoring
 
 | Perintah | Fungsi |
 |---|---|
@@ -140,9 +128,10 @@ Buka menu **DNS Management** di registrar tempat Anda membeli domain (Niagahoste
 
 ---
 
-## 🧪 5. Cara Cek Bahwa Web Sudah Berjalan
+## 🧪 4. Cara Cek Bahwa Web Sudah Berjalan
 Buka browser di HP / Laptop:
 - Akses via IP: `http://IP_VPS_ANDA`
 - Akses via Domain: `http://flatimostore.my.id`
 
 🎉 **Selamat! Flatimo Mail kini telah online dan siap melayani email sementara 24 jam nonstop!** ⚡
+
