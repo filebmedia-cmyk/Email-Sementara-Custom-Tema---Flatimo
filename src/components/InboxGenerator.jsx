@@ -26,7 +26,8 @@ export default function InboxGenerator({
   onOpenQrModal,
   onRefresh,
   isRefreshing,
-  addToast
+  addToast,
+  onOpenSettings
 }) {
   const { primaryColor, secondaryColor, glowEnabled } = useTheme();
 
@@ -235,6 +236,24 @@ export default function InboxGenerator({
                           </button>
                         );
                       })}
+
+                      {/* Shortcut Kelola Domain */}
+                      {onOpenSettings && (
+                        <div className="pt-1.5 mt-1.5 border-t border-slate-800/80">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setIsDomainOpen(false);
+                              onOpenSettings();
+                            }}
+                            className="w-full flex items-center gap-1.5 px-2.5 py-2 rounded-xl text-left text-xs font-bold text-slate-300 hover:text-white hover:bg-dark-800 transition-all cursor-pointer"
+                            style={{ color: primaryColor }}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                            <span>+ Tambah / Kelola Domain</span>
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}

@@ -60,6 +60,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
   const [isPasswordProtected, setIsPasswordProtected] = useState(false); // Default OFF as requested
   const [accessPassword, setAccessPassword] = useState('flatimo_access_pass');
   const [settingsPassword, setSettingsPassword] = useState('2103'); // Default 2103
+  const [adminCdk, setAdminCdk] = useState('CDK-FLATIMO-ADMIN-999');
   const [showPassword, setShowPassword] = useState(false);
   const [showSettingsPin, setShowSettingsPin] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState('flatimo_secret_key_123');
@@ -98,39 +99,42 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
   };
 
   // Load current settings & domains from backend
-  useEffect(() => {
-    async function load() {
-      try {
-        loadDomainList();
-        const res = await fetchSettings();
-        if (res.success && res.settings) {
-          const s = res.settings;
-          setApiKey(s.apiKey || 'FLATIMOSTORE');
-          setApiMode(s.apiMode || 'public');
-          setWebhookMode(s.webhookMode || 'public');
-          setHttpDocsMode(s.httpDocsMode || 'public');
-          setIsPasswordProtected(Boolean(s.isPasswordProtected));
-          setAccessPassword(s.accessPassword || 'flatimo_access_pass');
-          setSettingsPassword(s.settingsPassword || s.adminBotPassword || '2103');
-          setWebhookSecret(s.webhookSecret || 'flatimo_secret_key_123');
-          setRetentionHours(s.retentionHours || 24);
-          setPopupEnabled(Boolean(s.popupEnabled));
-          setPopupTitle(s.popupTitle || '');
-          setPopupMessage(s.popupMessage || '');
-          setPopupImageUrl(s.popupImageUrl || '');
-          setPopupButtonText(s.popupButtonText || 'Lihat Selengkapnya');
-          setPopupButtonUrl(s.popupButtonUrl || '');
-          setPopupFrequency(s.popupFrequency || 'once_per_session');
+  const loadSettingsData = async (adminPin = '') => {
+    try {
+      loadDomainList();
+      const res = await fetchSettings(adminPin);
+      if (res.success && res.settings) {
+        const s = res.settings;
+        setApiKey(s.apiKey || 'FLATIMOSTORE');
+        setApiMode(s.apiMode || 'public');
+        setWebhookMode(s.webhookMode || 'public');
+        setHttpDocsMode(s.httpDocsMode || 'public');
+        setIsPasswordProtected(Boolean(s.isPasswordProtected));
+        setAccessPassword(s.accessPassword || 'flatimo_access_pass');
+        setSettingsPassword(s.settingsPassword || s.adminBotPassword || '2103');
+        if (s.adminCdk && s.adminCdk !== '****************') {
+          setAdminCdk(s.adminCdk);
         }
-      } catch (err) {
-        console.error('Error fetching settings:', err);
-      } finally {
-        setIsLoading(false);
+        setWebhookSecret(s.webhookSecret || 'flatimo_secret_key_123');
+        setRetentionHours(s.retentionHours || 24);
+        setPopupEnabled(Boolean(s.popupEnabled));
+        setPopupTitle(s.popupTitle || '');
+        setPopupMessage(s.popupMessage || '');
+        setPopupImageUrl(s.popupImageUrl || '');
+        setPopupButtonText(s.popupButtonText || 'Lihat Selengkapnya');
+        setPopupButtonUrl(s.popupButtonUrl || '');
+        setPopupFrequency(s.popupFrequency || 'once_per_session');
       }
+    } catch (err) {
+      console.error('Error fetching settings:', err);
+    } finally {
+      setIsLoading(false);
     }
-    load();
-  }, []);
+  };
 
+  useEffect(() => {
+    loadSettingsData();
+  }, []);
 
   // Verify PIN for Settings Lock Gate
   const handleVerifyPin = async (e) => {
@@ -148,8 +152,10 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
       const res = await verifySettingsPin(cleanPin);
       if (res.success && res.authorized) {
         sessionStorage.setItem('tmail_settings_unlocked', 'true');
+        sessionStorage.setItem('tmail_admin_pin', cleanPin);
         setIsUnlocked(true);
         setPinInput('');
+        loadSettingsData(cleanPin);
         if (addToast) {
           addToast('success', 'Akses Pengaturan Terbuka', 'Selamat datang di panel kontrol Pengaturan Sistem.');
         }
@@ -160,8 +166,10 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
       // Fallback check
       if (cleanPin === '2103' || cleanPin === settingsPassword) {
         sessionStorage.setItem('tmail_settings_unlocked', 'true');
+        sessionStorage.setItem('tmail_admin_pin', cleanPin);
         setIsUnlocked(true);
         setPinInput('');
+        loadSettingsData(cleanPin);
         if (addToast) {
           addToast('success', 'Akses Pengaturan Terbuka', 'Selamat datang di panel kontrol Pengaturan Sistem.');
         }
@@ -197,6 +205,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
         accessPassword: accessPassword.trim(),
         settingsPassword: settingsPassword.trim() || '2103',
         adminBotPassword: settingsPassword.trim() || '2103',
+        adminCdk: adminCdk.trim().toUpperCase() || 'CDK-FLATIMO-ADMIN-999',
         webhookSecret: webhookSecret.trim(),
         retentionHours: Number(retentionHours) || 24,
         popupEnabled: Boolean(popupEnabled),
@@ -210,6 +219,14 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
 
       const res = await updateSettings(payload);
       if (res.success) {
+        if (settingsPassword.trim()) {
+          sessionStorage.setItem('tmail_admin_pin', settingsPassword.trim());
+        }
+        if (adminCdk.trim()) {
+          const cleanCdk = adminCdk.trim().toUpperCase();
+          sessionStorage.setItem('tmail_admin_cdk', cleanCdk);
+          localStorage.setItem('tmail_admin_cdk', cleanCdk);
+        }
         if (onSettingsUpdated) {
           onSettingsUpdated(payload);
         }
@@ -419,6 +436,10 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
                 <span>{pinError}</span>
               </div>
             )}
+
+            <p className="text-[11px] text-slate-500">
+              PIN default bawaan: <button type="button" onClick={() => setPinInput('2103')} className="text-amber-400 font-mono font-bold hover:underline cursor-pointer">2103</button> (bisa diganti setelah masuk)
+            </p>
 
             <button
               type="submit"
@@ -1069,6 +1090,41 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
                 {showSettingsPin ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
+          </div>
+
+          {/* Custom Single-User CDK Input */}
+          <div className="space-y-1.5 pt-3 border-t border-slate-800/80">
+            <div className="flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5" style={{ color: primaryColor }} />
+                <span>Kunci Lisensi Akses CDK (Eksklusif 1 User):</span>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  const url = `${window.location.origin}/?cdk=${adminCdk}`;
+                  navigator.clipboard.writeText(url);
+                  if (addToast) addToast('success', 'Link Login CDK Disalin!', 'Simpan link ini sebagai jalan pintas login rahasia admin.');
+                }}
+                className="text-[11px] font-bold text-amber-400 hover:underline cursor-pointer flex items-center gap-1"
+              >
+                <Copy className="w-3 h-3" />
+                <span>Salin Link Login Rahasia</span>
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type="text"
+                value={adminCdk}
+                onChange={(e) => setAdminCdk(e.target.value.toUpperCase())}
+                placeholder="Contoh: CDK-FLATIMO-ADMIN-999"
+                className="w-full px-3.5 py-2.5 rounded-xl bg-dark-950 border border-slate-800 text-white text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-white transition-colors uppercase"
+              />
+            </div>
+            <p className="text-[11px] text-slate-500">
+              Hanya orang yang memiliki kode CDK ini yang dapat membuka menu admin. Orang lain yang membuka web Anda tidak akan melihat menu admin sama sekali.
+            </p>
           </div>
         </div>
 

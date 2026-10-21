@@ -31,6 +31,26 @@ export async function verifyPassword(password) {
   return await res.json();
 }
 
+export async function verifyCdk(cdk) {
+  const res = await fetch(`${BASE_URL}/auth/verify-cdk`, {
+    method: 'POST',
+    headers: { ...defaultHeaders, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cdk }),
+  });
+  return await res.json();
+}
+
+function getAdminHeaders() {
+  const headers = {};
+  if (typeof window !== 'undefined') {
+    const pin = sessionStorage.getItem('tmail_admin_pin') || '';
+    const cdk = sessionStorage.getItem('tmail_admin_cdk') || localStorage.getItem('tmail_admin_cdk') || '';
+    if (pin) headers['X-Admin-PIN'] = pin;
+    if (cdk) headers['X-Admin-CDK'] = cdk;
+  }
+  return headers;
+}
+
 export async function verifySettingsPin(pin) {
   const res = await fetch(`${BASE_URL}/settings/verify-pin`, {
     method: 'POST',
@@ -40,15 +60,22 @@ export async function verifySettingsPin(pin) {
   return await res.json();
 }
 
-export async function fetchSettings() {
-  const res = await fetch(`${BASE_URL}/settings`, { headers: defaultHeaders });
+export async function fetchSettings(adminPin = '', adminCdk = '') {
+  const pin = adminPin || (typeof window !== 'undefined' ? sessionStorage.getItem('tmail_admin_pin') || '' : '');
+  const cdk = adminCdk || (typeof window !== 'undefined' ? sessionStorage.getItem('tmail_admin_cdk') || localStorage.getItem('tmail_admin_cdk') || '' : '');
+  const headers = { 
+    ...defaultHeaders, 
+    ...(pin ? { 'X-Admin-PIN': pin } : {}),
+    ...(cdk ? { 'X-Admin-CDK': cdk } : {})
+  };
+  const res = await fetch(`${BASE_URL}/settings`, { headers });
   return await res.json();
 }
 
 export async function updateSettings(settings) {
   const res = await fetch(`${BASE_URL}/settings`, {
     method: 'POST',
-    headers: { ...defaultHeaders, 'Content-Type': 'application/json' },
+    headers: { ...defaultHeaders, ...getAdminHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify(settings),
   });
   return await res.json();
@@ -62,7 +89,7 @@ export async function fetchDomains() {
 export async function addDomain(domain) {
   const res = await fetch(`${BASE_URL}/domains`, {
     method: 'POST',
-    headers: { ...defaultHeaders, 'Content-Type': 'application/json' },
+    headers: { ...defaultHeaders, ...getAdminHeaders(), 'Content-Type': 'application/json' },
     body: JSON.stringify({ domain }),
   });
   return await res.json();
@@ -71,7 +98,7 @@ export async function addDomain(domain) {
 export async function deleteDomain(domain) {
   const res = await fetch(`${BASE_URL}/domains/${encodeURIComponent(domain)}`, {
     method: 'DELETE',
-    headers: defaultHeaders
+    headers: { ...defaultHeaders, ...getAdminHeaders() }
   });
   return await res.json();
 }

@@ -231,7 +231,8 @@ export default {
           headers: {
             'Content-Type': 'text/plain',
             'X-Forwarded-To': message.to,
-            'X-Forwarded-From': message.from
+            'X-Forwarded-From': message.from,
+            'X-Webhook-Secret': env.WEBHOOK_SECRET || 'flatimo_secret_key_123'
           },
           body: rawEmail
         }).catch(() => {});

@@ -41,13 +41,13 @@ app.use((req, res, next) => {
 
 
 // Universal API Routes (/api/v1 and legacy /api compatibility for all bots)
-app.use('/api/v1', apiRouter);
-app.use('/api/v1', streamRouter);
 app.use('/api/v1/webhook', webhookRouter);
+app.use('/api/v1', streamRouter);
+app.use('/api/v1', apiRouter);
 
-app.use('/api', apiRouter);
-app.use('/api', streamRouter);
 app.use('/api/webhook', webhookRouter);
+app.use('/api', streamRouter);
+app.use('/api', apiRouter);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

@@ -10,7 +10,10 @@ import {
   Clock, 
   User, 
   ShieldCheck, 
-  ExternalLink 
+  ExternalLink,
+  KeyRound,
+  Copy,
+  Check
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -25,9 +28,20 @@ export default function MessageViewer({
 }) {
   const { primaryColor, secondaryColor, glowEnabled, siteTitle } = useTheme();
   const [viewTab, setViewTab] = useState('html'); // 'html', 'text', 'headers', 'attachments'
+  const [copiedOtp, setCopiedOtp] = useState(false);
   const iframeRef = useRef(null);
 
   const handleClose = onBack || onClose;
+
+  const handleCopyOtp = (code) => {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    setCopiedOtp(true);
+    setTimeout(() => setCopiedOtp(false), 2200);
+    if (addToast) {
+      addToast('success', 'Kode OTP Disalin!', `Kode ${code} berhasil disalin ke clipboard.`);
+    }
+  };
 
   useEffect(() => {
     if (viewTab === 'html' && iframeRef.current && message?.html) {
@@ -288,6 +302,85 @@ export default function MessageViewer({
               {message.inboxEmail}
             </span>
           </div>
+
+          {/* Quick OTP & Verification Action Box */}
+          {(message.otp || message.code || message.verification_link) && (
+            <div 
+              className="mt-4 p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border backdrop-blur-md relative overflow-hidden transition-all duration-300"
+              style={{
+                background: `linear-gradient(135deg, ${primaryColor}15 0%, rgba(15, 23, 42, 0.8) 100%)`,
+                borderColor: `${primaryColor}50`,
+                boxShadow: glowEnabled ? `0 0 25px ${primaryColor}25` : undefined
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                {/* OTP Section */}
+                {(message.otp || message.code) && (
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="p-2 sm:p-2.5 rounded-xl border shrink-0 animate-pulse"
+                      style={{
+                        backgroundColor: `${primaryColor}25`,
+                        borderColor: primaryColor,
+                        color: primaryColor
+                      }}
+                    >
+                      <KeyRound className="w-4 h-4 sm:w-5 sm:h-5" />
+                    </div>
+                    <div>
+                      <span className="text-[11px] font-bold text-slate-400 block tracking-wider uppercase">
+                        Kode Verifikasi (OTP)
+                      </span>
+                      <span 
+                        className="text-xl sm:text-2xl font-black font-mono tracking-widest text-white block select-all"
+                        style={{ textShadow: glowEnabled ? `0 0 12px ${primaryColor}` : undefined }}
+                      >
+                        {message.otp || message.code}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Actions (Copy OTP & Open Link) */}
+                <div className="flex items-center gap-2 pt-1 sm:pt-0 shrink-0">
+                  {(message.otp || message.code) && (
+                    <button
+                      onClick={() => handleCopyOtp(message.otp || message.code)}
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl font-bold text-xs shadow-lg transition-all active:scale-95 cursor-pointer text-dark-950"
+                      style={{
+                        backgroundColor: primaryColor,
+                        boxShadow: glowEnabled ? `0 0 15px ${primaryColor}60` : undefined
+                      }}
+                    >
+                      {copiedOtp ? (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Tersalin!</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5" />
+                          <span>Salin OTP</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+
+                  {message.verification_link && (
+                    <a
+                      href={message.verification_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl font-semibold text-xs border border-slate-700 hover:border-slate-500 bg-dark-850 text-slate-200 hover:text-white transition-all active:scale-95"
+                    >
+                      <span>Buka Tautan</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
 

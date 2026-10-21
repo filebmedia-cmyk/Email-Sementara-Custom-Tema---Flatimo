@@ -10,6 +10,7 @@ import QrModal from './components/QrModal';
 import TestEmailModal from './components/TestEmailModal';
 import ThemeSettingsModal from './components/ThemeSettingsModal';
 import PromoModal from './components/PromoModal';
+import CdkModal from './components/CdkModal';
 import Toast from './components/Toast';
 import DynamicBackground from './components/DynamicBackground';
 import { useTheme } from './context/ThemeContext';
@@ -24,7 +25,8 @@ import {
   deleteInbox as apiDeleteInbox,
   fetchStats,
   fetchAuthStatus,
-  fetchPopupConfig
+  fetchPopupConfig,
+  verifyCdk
 } from './utils/api';
 
 import { playMailSound } from './utils/sound';
@@ -109,7 +111,7 @@ export default function App() {
 
   // Navigation state: 'inbox' | 'api' | 'settings'
   const [activeTab, setActiveTab] = useState('inbox');
-  const [httpDocsMode, setHttpDocsMode] = useState('public');
+  const [httpDocsMode, setHttpDocsMode] = useState('private');
   
   // Password Protection state (Default OFF as instructed)
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
@@ -130,9 +132,28 @@ export default function App() {
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [isTestModalOpen, setIsTestModalOpen] = useState(false);
   const [isThemeModalOpen, setIsThemeModalOpen] = useState(false);
+  const [isCdkModalOpen, setIsCdkModalOpen] = useState(false);
   const [popupConfig, setPopupConfig] = useState(null);
   const [toasts, setToasts] = useState([]);
   const [stats, setStats] = useState(null);
+
+  // Exclusive Single-User CDK Gate State
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return Boolean(sessionStorage.getItem('tmail_admin_cdk') || localStorage.getItem('tmail_admin_cdk'));
+    }
+    return false;
+  });
+
+  const handleLockAdmin = () => {
+    sessionStorage.removeItem('tmail_admin_cdk');
+    localStorage.removeItem('tmail_admin_cdk');
+    sessionStorage.removeItem('tmail_settings_unlocked');
+    sessionStorage.removeItem('tmail_admin_pin');
+    setIsAdminUnlocked(false);
+    setActiveTab('inbox');
+    addToast('info', 'Panel Admin Dikunci', 'Akses panel admin telah dikunci kembali.');
+  };
 
   const eventSourceRef = useRef(null);
 
@@ -164,6 +185,25 @@ export default function App() {
   useEffect(() => {
     async function init() {
       try {
+        // Check if ?cdk=... parameter is present in URL
+        try {
+          const urlParams = new URLSearchParams(window.location.search);
+          const cdkParam = urlParams.get('cdk');
+          if (cdkParam) {
+            const cdkRes = await verifyCdk(cdkParam);
+            if (cdkRes.success && cdkRes.authorized) {
+              const cleanCdk = cdkParam.trim().toUpperCase();
+              sessionStorage.setItem('tmail_admin_cdk', cleanCdk);
+              localStorage.setItem('tmail_admin_cdk', cleanCdk);
+              sessionStorage.setItem('tmail_settings_unlocked', 'true');
+              setIsAdminUnlocked(true);
+              setActiveTab('settings');
+              addToast('success', 'Akses CDK Berhasil ⚡', 'Selamat datang Admin di panel kontrol.');
+              window.history.replaceState({}, '', window.location.pathname);
+            }
+          }
+        } catch (e) {}
+
         // Check website password protection & public settings status
         const authData = await fetchAuthStatus();
         if (authData.success) {
@@ -488,6 +528,9 @@ export default function App() {
         httpDocsMode={httpDocsMode}
         onOpenTestModal={() => setIsTestModalOpen(true)}
         onOpenThemeModal={() => setIsThemeModalOpen(true)}
+        isAdminUnlocked={isAdminUnlocked}
+        onOpenCdkModal={() => setIsCdkModalOpen(true)}
+        onLockAdmin={handleLockAdmin}
       />
 
       {/* Main Body Content with High Stacking Context */}
@@ -509,6 +552,13 @@ export default function App() {
               onRefresh={() => loadInboxMessages(currentEmail, true)}
               isRefreshing={isRefreshing}
               addToast={addToast}
+              onOpenSettings={() => {
+                if (isAdminUnlocked) {
+                  setActiveTab('settings');
+                } else {
+                  setIsCdkModalOpen(true);
+                }
+              }}
             />
 
             {/* Email Inbox Content (2-Column Grid) */}
@@ -551,8 +601,8 @@ export default function App() {
           <ApiDocs currentEmail={currentEmail} />
         )}
 
-        {/* TAB 3: PENGATURAN SISTEM (API KEY, WEBHOOK, DOMAIN & PASSWORD ACCESS LOCK) */}
-        {activeTab === 'settings' && (
+        {/* TAB 3: PENGATURAN SISTEM (HANYA DITAMPILKAN JIKA CDK SUDAH AKTIF) */}
+        {activeTab === 'settings' && isAdminUnlocked && (
           <SettingsView 
             addToast={addToast} 
             initialDomains={domains}
@@ -578,6 +628,15 @@ export default function App() {
       </main>
 
       {/* Modals */}
+      <CdkModal
+        isOpen={isCdkModalOpen}
+        onClose={() => setIsCdkModalOpen(false)}
+        onUnlocked={(cdk) => {
+          setIsAdminUnlocked(true);
+          setActiveTab('settings');
+        }}
+        addToast={addToast}
+      />
       <QrModal
         isOpen={isQrModalOpen}
         onClose={() => setIsQrModalOpen(false)}

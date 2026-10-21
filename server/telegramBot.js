@@ -4,10 +4,10 @@ import { db } from './db.js';
 import { config } from './config.js';
 import { eventBus } from './eventBus.js';
 
-const BOT_TOKEN = '8930418014:AAH36qodGrL87Q3i6WukUBayuoGSKRaEvyY';
-const ADMIN_ID = '6286514348';
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || process.env.BOT_TOKEN || '';
+const ADMIN_ID = process.env.TELEGRAM_ADMIN_ID || process.env.ADMIN_ID || '';
 const API_BASE = `http://127.0.0.1:${config.port || 3000}/api/v1`;
-const TG_API = `https://api.telegram.org/bot${BOT_TOKEN}`;
+const TG_API = BOT_TOKEN ? `https://api.telegram.org/bot${BOT_TOKEN}` : '';
 
 // State storage per user
 const userSessions = new Map();
@@ -581,6 +581,10 @@ let lastUpdateId = 0;
 let isPolling = false;
 
 export function startTelegramBot() {
+  if (!BOT_TOKEN) {
+    console.log(`[TelegramBot] TELEGRAM_BOT_TOKEN not provided in .env, skipping bot initialization.`);
+    return;
+  }
   if (isPolling) return;
   isPolling = true;
 

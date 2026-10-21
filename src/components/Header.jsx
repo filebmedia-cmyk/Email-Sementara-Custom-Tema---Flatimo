@@ -10,7 +10,10 @@ import {
   Send,
   BookOpen,
   SlidersHorizontal,
-  Mail
+  Mail,
+  Lock,
+  Unlock,
+  KeyRound
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 
@@ -19,9 +22,12 @@ export default function Header({
   setActiveTab,
   soundEnabled,
   setSoundEnabled,
-  httpDocsMode = 'public',
+  httpDocsMode = 'private',
   onOpenTestModal,
-  onOpenThemeModal
+  onOpenThemeModal,
+  isAdminUnlocked = false,
+  onOpenCdkModal,
+  onLockAdmin
 }) {
   const { siteTitle, siteTagline, primaryColor, secondaryColor, glowEnabled } = useTheme();
 
@@ -111,22 +117,27 @@ export default function Header({
               </button>
             )}
 
-            {/* Replaced DNS Guide with Settings Tab */}
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
-                activeTab === 'settings'
-                  ? 'text-dark-950 font-bold shadow-md'
-                  : 'text-slate-300 hover:text-white hover:bg-dark-800'
-              }`}
-              style={activeTab === 'settings' ? {
-                background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
-                boxShadow: glowEnabled ? `0 0 15px ${primaryColor}45` : undefined
-              } : {}}
-            >
-              <SlidersHorizontal className="w-4 h-4 icon-interactive group-hover:rotate-180 transition-transform duration-500" />
-              <span>Pengaturan</span>
-            </button>
+            {/* Admin Settings Tab: Hanya muncul jika CDK sudah aktif */}
+            {isAdminUnlocked && (
+              <button
+                onClick={() => setActiveTab('settings')}
+                className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === 'settings'
+                    ? 'text-dark-950 font-bold shadow-md'
+                    : 'text-slate-300 hover:text-white hover:bg-dark-800'
+                }`}
+                style={activeTab === 'settings' ? {
+                  background: `linear-gradient(135deg, ${primaryColor} 0%, ${secondaryColor} 100%)`,
+                  boxShadow: glowEnabled ? `0 0 15px ${primaryColor}45` : undefined
+                } : {}}
+              >
+                <SlidersHorizontal className="w-4 h-4 icon-interactive group-hover:rotate-180 transition-transform duration-500" />
+                <span>Pengaturan</span>
+                <span className="text-[9px] font-mono font-black px-1.5 py-0.5 rounded-full bg-dark-950 text-white">
+                  CDK
+                </span>
+              </button>
+            )}
           </nav>
 
           {/* Action Tools */}
@@ -171,6 +182,26 @@ export default function Header({
               )}
             </button>
 
+            {/* Discreet CDK Key / Lock Trigger */}
+            {!isAdminUnlocked ? (
+              <button
+                onClick={onOpenCdkModal}
+                title="Aktivasi Akses Admin (CDK)"
+                className="group p-2 sm:p-2.5 rounded-xl bg-dark-900 border border-slate-800 hover:border-slate-700 text-slate-500 hover:text-amber-400 transition-all active:scale-95 cursor-pointer"
+              >
+                <Lock className="w-4 h-4 icon-interactive group-hover:scale-115" />
+              </button>
+            ) : (
+              <button
+                onClick={onLockAdmin}
+                title="Kunci Kembali Akses Admin (Keluar)"
+                className="group flex items-center gap-1 px-2.5 py-1.5 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-rose-500/20"
+              >
+                <Unlock className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Kunci</span>
+              </button>
+            )}
+
           </div>
 
         </div>
@@ -211,21 +242,23 @@ export default function Header({
             </button>
           )}
 
-          <button
-            onClick={() => setActiveTab('settings')}
-            className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              activeTab === 'settings'
-                ? 'text-dark-950 font-bold shadow-sm'
-                : 'text-slate-400'
-            }`}
-            style={activeTab === 'settings' ? { 
-              backgroundColor: primaryColor,
-              boxShadow: glowEnabled ? `0 0 10px ${primaryColor}40` : undefined
-            } : {}}
-          >
-            <SlidersHorizontal className="w-3.5 h-3.5 icon-interactive" />
-            <span>Pengaturan</span>
-          </button>
+          {isAdminUnlocked && (
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`group flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                activeTab === 'settings'
+                  ? 'text-dark-950 font-bold shadow-sm'
+                  : 'text-slate-400'
+              }`}
+              style={activeTab === 'settings' ? { 
+                backgroundColor: primaryColor,
+                boxShadow: glowEnabled ? `0 0 10px ${primaryColor}40` : undefined
+              } : {}}
+            >
+              <SlidersHorizontal className="w-3.5 h-3.5 icon-interactive" />
+              <span>Pengaturan</span>
+            </button>
+          )}
         </div>
 
       </div>

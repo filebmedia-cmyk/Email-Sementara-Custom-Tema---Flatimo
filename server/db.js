@@ -53,13 +53,14 @@ class DatabaseStore {
     this.inboxIndex = new Map(); // email -> Set of messageIds
     this.settings = {
       apiKey: config.apiKey || 'FLATIMOSTORE',
-      apiMode: 'public', // 'public' | 'private'
-      webhookMode: 'public', // 'public' | 'private'
-      httpDocsMode: 'public', // 'public' | 'private'
+      apiMode: 'private', // Strictly private by default (anti-abuse)
+      webhookMode: 'private', // Strictly private by default (anti-abuse)
+      httpDocsMode: 'private', // Hide public API documentation by default
       isPasswordProtected: false, // Default OFF as requested
       accessPassword: 'flatimo_access_pass',
       settingsPassword: '2103', // Default settings PIN 2103 as requested
       adminBotPassword: '2103', // Default admin PIN for Telegram Bot as requested
+      adminCdk: config.adminCdk || 'CDK-FLATIMO-ADMIN-999', // Exclusive Admin CDK
       webhookSecret: config.webhookSecret || 'flatimo_secret_key_123',
       retentionHours: config.retentionHours || 24,
       popupEnabled: false,
@@ -167,13 +168,14 @@ class DatabaseStore {
   getSettings() {
     return {
       apiKey: this.settings.apiKey || 'FLATIMOSTORE',
-      apiMode: this.settings.apiMode || 'public',
-      webhookMode: this.settings.webhookMode || 'public',
-      httpDocsMode: this.settings.httpDocsMode || 'public',
+      apiMode: this.settings.apiMode || 'private',
+      webhookMode: this.settings.webhookMode || 'private',
+      httpDocsMode: this.settings.httpDocsMode || 'private',
       isPasswordProtected: Boolean(this.settings.isPasswordProtected),
       accessPassword: this.settings.accessPassword || 'flatimo_access_pass',
       settingsPassword: this.settings.settingsPassword || this.settings.adminBotPassword || '2103',
       adminBotPassword: this.settings.adminBotPassword || this.settings.settingsPassword || '2103',
+      adminCdk: this.settings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999',
       webhookSecret: this.settings.webhookSecret || 'flatimo_secret_key_123',
       retentionHours: this.settings.retentionHours || 24,
       popupEnabled: Boolean(this.settings.popupEnabled),
@@ -188,9 +190,9 @@ class DatabaseStore {
 
   getPublicSettings() {
     return {
-      apiMode: this.settings.apiMode || 'public',
-      webhookMode: this.settings.webhookMode || 'public',
-      httpDocsMode: this.settings.httpDocsMode || 'public',
+      apiMode: this.settings.apiMode || 'private',
+      webhookMode: this.settings.webhookMode || 'private',
+      httpDocsMode: this.settings.httpDocsMode || 'private',
       isPasswordProtected: Boolean(this.settings.isPasswordProtected),
       retentionHours: this.settings.retentionHours || 24,
       popupEnabled: Boolean(this.settings.popupEnabled),
@@ -203,7 +205,7 @@ class DatabaseStore {
     };
   }
 
-  updateSettings(newSettings) {
+  async updateSettings(newSettings) {
     if (newSettings && typeof newSettings === 'object') {
       if (newSettings.apiKey !== undefined) this.settings.apiKey = String(newSettings.apiKey).trim();
       if (newSettings.apiMode !== undefined) this.settings.apiMode = newSettings.apiMode === 'private' ? 'private' : 'public';
@@ -219,6 +221,9 @@ class DatabaseStore {
         this.settings.adminBotPassword = String(newSettings.adminBotPassword).trim();
         this.settings.settingsPassword = this.settings.adminBotPassword;
       }
+      if (newSettings.adminCdk !== undefined) {
+        this.settings.adminCdk = String(newSettings.adminCdk).trim().toUpperCase();
+      }
       if (newSettings.webhookSecret !== undefined) this.settings.webhookSecret = String(newSettings.webhookSecret).trim();
       if (newSettings.retentionHours !== undefined) this.settings.retentionHours = Number(newSettings.retentionHours) || 24;
       if (newSettings.popupEnabled !== undefined) this.settings.popupEnabled = Boolean(newSettings.popupEnabled);
@@ -228,7 +233,7 @@ class DatabaseStore {
       if (newSettings.popupButtonText !== undefined) this.settings.popupButtonText = String(newSettings.popupButtonText).trim();
       if (newSettings.popupButtonUrl !== undefined) this.settings.popupButtonUrl = String(newSettings.popupButtonUrl).trim();
       if (newSettings.popupFrequency !== undefined) this.settings.popupFrequency = newSettings.popupFrequency === 'always' ? 'always' : 'once_per_session';
-      this.save();
+      await this.saveAsync();
     }
     return this.getSettings();
   }
@@ -238,18 +243,18 @@ class DatabaseStore {
     return Array.from(this.domains);
   }
 
-  addDomain(domain) {
+  async addDomain(domain) {
     const clean = domain.trim().toLowerCase();
     if (!clean) return false;
     this.domains.add(clean);
-    this.save();
+    await this.saveAsync();
     return true;
   }
 
-  removeDomain(domain) {
+  async removeDomain(domain) {
     const clean = domain.trim().toLowerCase();
     const removed = this.domains.delete(clean);
-    if (removed) this.save();
+    if (removed) await this.saveAsync();
     return removed;
   }
 

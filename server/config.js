@@ -19,6 +19,7 @@ export const config = {
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   apiKey: process.env.API_KEY || 'FLATIMOSTORE',
   apiKeys: (process.env.API_KEYS || 'FLATIMOSTORE').split(',').map(k => k.trim()),
+  adminCdk: process.env.ADMIN_CDK || 'CDK-FLATIMO-ADMIN-999',
   dataDir: process.env.DATA_DIR || (process.env.VERCEL ? '/tmp/data' : path.join(__dirname, '..', 'data')),
   upstashRedisUrl: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
   upstashRedisToken: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || '',

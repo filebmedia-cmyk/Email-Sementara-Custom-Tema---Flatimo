@@ -42,22 +42,21 @@ router.use((req, res, next) => {
   }
 
   // Exempt auth status, verify password, verify key, settings, and popup from strict blocking
-  const publicPaths = ['/auth/status', '/auth/verify-password', '/key/verify', '/settings', '/settings/verify-pin', '/popup'];
+  const publicPaths = ['/auth/status', '/auth/verify-password', '/auth/verify-cdk', '/key/verify', '/settings', '/settings/verify-pin', '/popup'];
   if (publicPaths.includes(req.path)) {
     return next();
   }
 
   // If API Mode is Private, require API key for external API requests
   if (currentSettings.apiMode === 'private') {
-    const isBrowserRequest = req.headers['sec-fetch-site'] === 'same-origin' || req.headers['x-requested-with'] === 'XMLHttpRequest';
-    const referer = req.headers['referer'] || req.headers['origin'] || '';
-    const isLocalReferer = referer.includes('mailflatimo.web.id') || referer.includes('localhost') || referer.includes('127.0.0.1');
-    const isInternalApp = isBrowserRequest || isLocalReferer || req.headers['x-client-app'] === 'flatimo-web' || req.headers['x-client-app'] === 'flatimo-bot';
+    const isBrowserOrigin = req.headers['sec-fetch-site'] === 'same-origin' || 
+                            (req.headers['origin'] && req.headers['host'] && req.headers['origin'].includes(req.headers['host'])) ||
+                            (req.headers['referer'] && req.headers['host'] && req.headers['referer'].includes(req.headers['host']));
 
-    if (!req.isVip && !isInternalApp) {
+    if (!req.isVip && !isBrowserOrigin) {
       return res.status(401).json({
         success: false,
-        error: 'Akses Ditolak: REST API sedang dalam mode Privat. Harap sertakan header X-API-Key atau parameter api_key yang valid.'
+        error: 'Akses Ditolak: REST API sedang dalam mode Privat. Anda harus menyertakan header X-API-Key atau parameter api_key yang valid.'
       });
     }
   }
@@ -167,9 +166,57 @@ router.post('/settings/verify-pin', (req, res) => {
   });
 });
 
-// 0.3 GET /api/v1/settings - Get settings
+// 0.28 POST /api/v1/auth/verify-cdk - Verify Single-User Exclusive Admin CDK
+router.post('/auth/verify-cdk', (req, res) => {
+  const { cdk } = req.body;
+  const currentSettings = db.getSettings();
+  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999').trim().toUpperCase();
+
+  if (!cdk) {
+    return res.status(400).json({
+      success: false,
+      authorized: false,
+      error: 'Kode CDK Akses harus diisi.'
+    });
+  }
+
+  if (String(cdk).trim().toUpperCase() === validCdk) {
+    return res.json({
+      success: true,
+      authorized: true,
+      token: nanoid(32),
+      cdk: validCdk,
+      message: 'Akses CDK Eksklusif Berhasil! Akses Panel Admin Terbuka.'
+    });
+  }
+
+  return res.status(401).json({
+    success: false,
+    authorized: false,
+    error: 'Kode CDK Tidak Valid! Hanya pemegang lisensi CDK resmi yang dapat masuk.'
+  });
+});
+
+// Helper to verify if caller is authorized Admin (via CDK, PIN, or VIP API Key)
+function isAdminAuthorized(req) {
+  const currentSettings = db.getSettings();
+  const validPin = String(currentSettings.settingsPassword || currentSettings.adminBotPassword || '2103').trim();
+  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999').trim().toUpperCase();
+
+  const providedPin = (req.headers['x-admin-pin'] || req.body?.adminPin || req.query?.adminPin || '').trim();
+  const providedCdk = (req.headers['x-admin-cdk'] || req.headers['x-cdk'] || req.body?.cdk || req.query?.cdk || '').trim().toUpperCase();
+
+  if (providedCdk && providedCdk === validCdk) return true;
+  if (providedPin && providedPin === validPin) return true;
+  if (req.isVip) return true;
+  return false;
+}
+
+// 0.3 GET /api/v1/settings - Get settings (Sensitive keys masked unless authenticated)
 router.get('/settings', (req, res) => {
   const settings = db.getSettings();
+  const isAdmin = isAdminAuthorized(req);
+
   res.json({
     success: true,
     settings: {
@@ -177,13 +224,14 @@ router.get('/settings', (req, res) => {
       apiMode: settings.apiMode,
       webhookMode: settings.webhookMode,
       httpDocsMode: settings.httpDocsMode,
-      isPasswordProtected: settings.isPasswordProtected,
-      accessPassword: settings.accessPassword,
-      settingsPassword: settings.settingsPassword,
-      adminBotPassword: settings.adminBotPassword,
-      webhookSecret: settings.webhookSecret,
+      isPasswordProtected: Boolean(settings.isPasswordProtected),
+      accessPassword: isAdmin ? settings.accessPassword : (settings.isPasswordProtected ? '********' : ''),
+      settingsPassword: isAdmin ? settings.settingsPassword : '****',
+      adminBotPassword: isAdmin ? settings.adminBotPassword : '****',
+      adminCdk: isAdmin ? (settings.adminCdk || 'CDK-FLATIMO-ADMIN-999') : '****************',
+      webhookSecret: isAdmin ? settings.webhookSecret : '********',
       retentionHours: settings.retentionHours,
-      popupEnabled: settings.popupEnabled,
+      popupEnabled: Boolean(settings.popupEnabled),
       popupTitle: settings.popupTitle,
       popupMessage: settings.popupMessage,
       popupImageUrl: settings.popupImageUrl,
@@ -194,9 +242,16 @@ router.get('/settings', (req, res) => {
   });
 });
 
-// 0.4 POST /api/v1/settings - Update settings
-router.post('/settings', (req, res) => {
-  const updated = db.updateSettings(req.body);
+// 0.4 POST /api/v1/settings - Update settings (Protected by Admin PIN)
+router.post('/settings', async (req, res) => {
+  if (!isAdminAuthorized(req)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Akses ditolak: PIN Admin diperlukan untuk mengubah pengaturan.'
+    });
+  }
+
+  const updated = await db.updateSettings(req.body);
   res.json({
     success: true,
     message: 'Pengaturan berhasil diperbarui dan disimpan.',
@@ -255,7 +310,7 @@ router.get('/domains', (req, res) => {
 });
 
 // 2. POST /api/v1/domains - Add a custom domain
-const handleAddDomain = (req, res) => {
+const handleAddDomain = async (req, res) => {
   const domain = req.body?.domain || req.query?.domain || req.body?.name;
   if (!domain || typeof domain !== 'string') {
     return res.status(400).json({ success: false, error: 'Domain name is required' });
@@ -266,7 +321,7 @@ const handleAddDomain = (req, res) => {
     return res.status(400).json({ success: false, error: 'Invalid domain format' });
   }
 
-  db.addDomain(clean);
+  await db.addDomain(clean);
   res.json({
     success: true,
     message: `Domain ${clean} successfully added`,
@@ -276,10 +331,17 @@ const handleAddDomain = (req, res) => {
 router.post('/domains', handleAddDomain);
 router.post('/domain/add', handleAddDomain);
 
-// 3. DELETE /api/v1/domains/:domain - Remove a custom domain
-router.delete('/domains/:domain', (req, res) => {
+// 3. DELETE /api/v1/domains/:domain - Remove a custom domain (Protected)
+router.delete('/domains/:domain', async (req, res) => {
+  if (!isAdminAuthorized(req)) {
+    return res.status(401).json({
+      success: false,
+      error: 'Akses ditolak: PIN Admin atau API Key VIP diperlukan untuk menghapus domain.'
+    });
+  }
+
   const domain = req.params.domain.toLowerCase().trim();
-  const removed = db.removeDomain(domain);
+  const removed = await db.removeDomain(domain);
   if (!removed) {
     return res.status(404).json({ success: false, error: 'Domain not found' });
   }
