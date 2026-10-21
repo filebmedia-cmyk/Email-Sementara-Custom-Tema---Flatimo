@@ -223,43 +223,46 @@ export default {
         await env.TMAIL_KV.put(`inbox:${recipient}`, JSON.stringify(existingList.slice(0, 50)), { expirationTtl: 86400 });
       }
 
-      // 3. Teruskan ke Webhook Vercel
+      // 3. Teruskan ke Webhook Vercel (JSON Payload dengan Raw MIME Included)
       const targetWebhook = env.VERCEL_WEBHOOK_URL || DEFAULT_VERCEL_WEBHOOK;
       if (targetWebhook) {
         const webhookSecret = env.WEBHOOK_SECRET || 'flatimo_secret_key_123';
-        try {
-          const webhookRes = await fetch(targetWebhook, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'text/plain',
-              'X-Forwarded-To': message.to,
-              'X-Forwarded-From': message.from,
-              'X-Webhook-Secret': webhookSecret
-            },
-            body: rawEmail
-          });
-          const resText = await webhookRes.text();
-          console.log(`[Worker Webhook Success] Status: ${webhookRes.status}, Response: ${resText}`);
-        } catch (postErr) {
-          console.error('[Worker Webhook Error, sending JSON fallback...]', postErr.message);
-          try {
-            await fetch(targetWebhook, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Webhook-Secret': webhookSecret
-              },
-              body: JSON.stringify({
-                to: recipient,
-                from: parsed.from,
-                subject: parsed.subject,
-                text: parsed.text,
-                html: parsed.html,
-                date: msgData.date
-              })
-            });
-          } catch (e2) {}
+        const emailSubject = (message.headers && typeof message.headers.get === 'function' ? message.headers.get('subject') : null) || parsed.subject || '(Tanpa Subjek)';
+        
+        const payload = {
+          to: recipient,
+          from: parsed.from,
+          subject: emailSubject,
+          text: parsed.text,
+          html: parsed.html,
+          date: msgData.date,
+          headers: parsed.headers,
+          raw: rawEmail
+        };
+
+        const postPromise = fetch(targetWebhook, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Forwarded-To': message.to,
+            'X-Forwarded-From': message.from,
+            'X-Webhook-Secret': webhookSecret
+          },
+          body: JSON.stringify(payload)
+        }).then(async (res) => {
+          const text = await res.text();
+          console.log(`[Worker Webhook Success] Status: ${res.status}, Response: ${text}`);
+          return res;
+        }).catch((err) => {
+          console.error('[Worker Webhook Fetch Error]', err.message);
+        });
+
+        // Pastikan runtime Cloudflare tidak mematikan worker sebelum fetch selesai
+        if (ctx && typeof ctx.waitUntil === 'function') {
+          ctx.waitUntil(postPromise);
         }
+
+        await postPromise;
       }
 
       console.log(`[Worker Success] Email from ${message.from} to ${recipient} processed.`);
