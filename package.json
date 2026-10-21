@@ -4,9 +4,6 @@
   "description": "Flatimo Mail - Lightning Fast Disposable Temp Mail with Built-in SMTP, Public REST API & Real-time Web UI",
   "main": "server/index.js",
   "type": "module",
-  "engines": {
-    "node": ">=20.x"
-  },
   "scripts": {
     "dev": "concurrently \"npm run server:dev\" \"npm run client:dev\"",
     "server:dev": "node server/index.js",

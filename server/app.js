@@ -34,6 +34,14 @@ app.use(cors({
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// Ensure DB is ready & synced
+app.use(async (req, res, next) => {
+  try {
+    await db.ready();
+  } catch (e) {}
+  next();
+});
+
 // Request Logger
 app.use((req, res, next) => {
   if (!req.path.includes('/stream')) {
@@ -42,8 +50,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health check endpoint (Instant 1ms response, completely independent of DB)
-app.get(['/api/health', '/api/v1/health', '/health'], (req, res) => {
+// Health check endpoint (always accessible)
+app.get(['/api/health', '/api/v1/health'], (req, res) => {
   res.json({
     status: 'ok',
     service: 'Flatimo Mail Engine',
@@ -52,9 +60,6 @@ app.get(['/api/health', '/api/v1/health', '/health'], (req, res) => {
     platform: process.env.VERCEL ? 'vercel-serverless' : 'standalone'
   });
 });
-
-// Initiate DB sync in background on container boot
-db.ready().catch(() => {});
 
 // Universal API Routes (/api/v1 and legacy /api compatibility for all bots)
 app.use('/api/v1/webhook', webhookRouter);

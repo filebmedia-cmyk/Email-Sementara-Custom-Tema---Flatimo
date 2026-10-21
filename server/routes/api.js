@@ -1,6 +1,5 @@
 import express from 'express';
 import { nanoid } from 'nanoid';
-import dns from 'dns/promises';
 import { db } from '../db.js';
 import { eventBus } from '../eventBus.js';
 import { config } from '../config.js';
