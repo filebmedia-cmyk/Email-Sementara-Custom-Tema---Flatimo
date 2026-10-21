@@ -18,8 +18,7 @@ async function upstashGet(key) {
   if (!config.upstashRedisUrl || !config.upstashRedisToken) return null;
   try {
     const res = await fetch(`${config.upstashRedisUrl}/get/${encodeURIComponent(key)}`, {
-      headers: { Authorization: `Bearer ${config.upstashRedisToken}` },
-      signal: AbortSignal.timeout(3500)
+      headers: { Authorization: `Bearer ${config.upstashRedisToken}` }
     });
     const data = await res.json();
     if (!data || !data.result) return null;
@@ -53,8 +52,7 @@ async function upstashSet(key, value) {
         Authorization: `Bearer ${config.upstashRedisToken}`,
         'Content-Type': 'application/json'
       },
-      body: serialized,
-      signal: AbortSignal.timeout(4000)
+      body: serialized
     });
     return true;
   } catch (e) {

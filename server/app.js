@@ -53,16 +53,8 @@ app.get(['/api/health', '/api/v1/health', '/health'], (req, res) => {
   });
 });
 
-// Ensure DB is ready & synced (Only initialized once per container)
-let dbReadyPromise = null;
-app.use((req, res, next) => {
-  if (!dbReadyPromise) {
-    dbReadyPromise = db.ready().catch((err) => {
-      console.error('[DB Ready Error]', err.message);
-    });
-  }
-  dbReadyPromise.finally(() => next());
-});
+// Initiate DB sync in background on container boot
+db.ready().catch(() => {});
 
 // Universal API Routes (/api/v1 and legacy /api compatibility for all bots)
 app.use('/api/v1/webhook', webhookRouter);
