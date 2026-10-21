@@ -11,6 +11,7 @@ import TestEmailModal from './components/TestEmailModal';
 import ThemeSettingsModal from './components/ThemeSettingsModal';
 import PromoModal from './components/PromoModal';
 import CdkModal from './components/CdkModal';
+import CdkLoginView from './components/CdkLoginView';
 import Toast from './components/Toast';
 import DynamicBackground from './components/DynamicBackground';
 import { useTheme } from './context/ThemeContext';
@@ -109,8 +110,16 @@ function getEmailFromUrl(availableDomains = []) {
 export default function App() {
   const { siteTitle, primaryColor } = useTheme();
 
-  // Navigation state: 'inbox' | 'api' | 'settings'
-  const [activeTab, setActiveTab] = useState('inbox');
+  // Navigation state: 'inbox' | 'api' | 'settings' (Support /admin route)
+  const [activeTab, setActiveTab] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const path = window.location.pathname.toLowerCase();
+      if (path === '/admin' || path.startsWith('/admin/')) {
+        return 'settings';
+      }
+    }
+    return 'inbox';
+  });
   const [httpDocsMode, setHttpDocsMode] = useState('private');
   
   // Password Protection state (Default OFF as instructed)
@@ -145,13 +154,28 @@ export default function App() {
     return false;
   });
 
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    if (typeof window !== 'undefined') {
+      if (newTab === 'settings') {
+        if (window.location.pathname !== '/admin') {
+          window.history.pushState(null, '', '/admin');
+        }
+      } else if (newTab === 'inbox') {
+        if (window.location.pathname === '/admin') {
+          window.history.pushState(null, '', '/');
+        }
+      }
+    }
+  };
+
   const handleLockAdmin = () => {
     sessionStorage.removeItem('tmail_admin_cdk');
     localStorage.removeItem('tmail_admin_cdk');
     sessionStorage.removeItem('tmail_settings_unlocked');
     sessionStorage.removeItem('tmail_admin_pin');
     setIsAdminUnlocked(false);
-    setActiveTab('inbox');
+    handleTabChange('inbox');
     addToast('info', 'Panel Admin Dikunci', 'Akses panel admin telah dikunci kembali.');
   };
 
@@ -522,7 +546,7 @@ export default function App() {
       {/* Main Navigation Header */}
       <Header
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleTabChange}
         soundEnabled={soundEnabled}
         setSoundEnabled={setSoundEnabled}
         httpDocsMode={httpDocsMode}
@@ -552,13 +576,7 @@ export default function App() {
               onRefresh={() => loadInboxMessages(currentEmail, true)}
               isRefreshing={isRefreshing}
               addToast={addToast}
-              onOpenSettings={() => {
-                if (isAdminUnlocked) {
-                  setActiveTab('settings');
-                } else {
-                  setIsCdkModalOpen(true);
-                }
-              }}
+              onOpenSettings={() => handleTabChange('settings')}
             />
 
             {/* Email Inbox Content (2-Column Grid) */}
@@ -601,28 +619,39 @@ export default function App() {
           <ApiDocs currentEmail={currentEmail} />
         )}
 
-        {/* TAB 3: PENGATURAN SISTEM (HANYA DITAMPILKAN JIKA CDK SUDAH AKTIF) */}
-        {activeTab === 'settings' && isAdminUnlocked && (
-          <SettingsView 
-            addToast={addToast} 
-            initialDomains={domains}
-            onDomainsChange={(newDoms) => setDomains(newDoms)}
-            onSettingsUpdated={(updated) => {
-              if (updated.httpDocsMode) setHttpDocsMode(updated.httpDocsMode);
-              if (updated.isPasswordProtected !== undefined) setIsPasswordProtected(Boolean(updated.isPasswordProtected));
-              if (updated.popupEnabled !== undefined) {
-                setPopupConfig({
-                  popupEnabled: Boolean(updated.popupEnabled),
-                  popupTitle: updated.popupTitle || '',
-                  popupMessage: updated.popupMessage || '',
-                  popupImageUrl: updated.popupImageUrl || '',
-                  popupButtonText: updated.popupButtonText || 'Lihat Selengkapnya',
-                  popupButtonUrl: updated.popupButtonUrl || '',
-                  popupFrequency: updated.popupFrequency || 'once_per_session'
-                });
-              }
-            }}
-          />
+        {/* TAB 3: PENGATURAN SISTEM (/admin) */}
+        {activeTab === 'settings' && (
+          isAdminUnlocked ? (
+            <SettingsView 
+              addToast={addToast} 
+              initialDomains={domains}
+              onDomainsChange={(newDoms) => setDomains(newDoms)}
+              onSettingsUpdated={(updated) => {
+                if (updated.httpDocsMode) setHttpDocsMode(updated.httpDocsMode);
+                if (updated.isPasswordProtected !== undefined) setIsPasswordProtected(Boolean(updated.isPasswordProtected));
+                if (updated.popupEnabled !== undefined) {
+                  setPopupConfig({
+                    popupEnabled: Boolean(updated.popupEnabled),
+                    popupTitle: updated.popupTitle || '',
+                    popupMessage: updated.popupMessage || '',
+                    popupImageUrl: updated.popupImageUrl || '',
+                    popupButtonText: updated.popupButtonText || 'Lihat Selengkapnya',
+                    popupButtonUrl: updated.popupButtonUrl || '',
+                    popupFrequency: updated.popupFrequency || 'once_per_session'
+                  });
+                }
+              }}
+            />
+          ) : (
+            <CdkLoginView
+              onUnlocked={(cdk) => {
+                setIsAdminUnlocked(true);
+                handleTabChange('settings');
+              }}
+              onBackHome={() => handleTabChange('inbox')}
+              addToast={addToast}
+            />
+          )
         )}
 
       </main>
@@ -633,7 +662,7 @@ export default function App() {
         onClose={() => setIsCdkModalOpen(false)}
         onUnlocked={(cdk) => {
           setIsAdminUnlocked(true);
-          setActiveTab('settings');
+          handleTabChange('settings');
         }}
         addToast={addToast}
       />
