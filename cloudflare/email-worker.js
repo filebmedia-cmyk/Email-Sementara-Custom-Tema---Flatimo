@@ -12,7 +12,7 @@ const INBOX_CACHE = new Map();
 const MSG_CACHE = new Map();
 
 // Default Vercel Webhook URL
-const DEFAULT_VERCEL_WEBHOOK = 'https://email-sementara-custom-tema-flatimo.vercel.app/api/v1/webhook/incoming';
+const DEFAULT_VERCEL_WEBHOOK = 'https://mailflatimo.web.id/api/v1/webhook/incoming';
 
 // Helper Parser Sederhana untuk MIME Header & Body di Cloudflare Edge
 function parseEmailMime(raw, fallbackRecipient, fallbackSender) {
