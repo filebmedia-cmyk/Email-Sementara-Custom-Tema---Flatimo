@@ -2,7 +2,7 @@ import { simpleParser } from 'mailparser';
 import { nanoid } from 'nanoid';
 
 // Helper to extract OTP / Verification codes from text/html
-function extractOtpAndLinks(text, html, subject) {
+export function extractOtpAndLinks(text, html, subject) {
   const cleanSubject = subject || '';
   const cleanText = text || '';
   const cleanHtml = (html || '').replace(/<[^>]*>/g, ' ');

@@ -1,7 +1,7 @@
 import express from 'express';
 import { db } from '../db.js';
 import { eventBus } from '../eventBus.js';
-import { parseRawEmail } from '../utils/mailParser.js';
+import { parseRawEmail, extractOtpAndLinks } from '../utils/mailParser.js';
 import { config } from '../config.js';
 
 const router = express.Router();
@@ -48,14 +48,16 @@ router.post('/incoming', async (req, res) => {
         rawEmail = req.body.raw;
       } else if (req.body.mime) {
         rawEmail = req.body.mime;
-      } else if (req.body.to && (req.body.html || req.body.text)) {
+      } else if (req.body.to) {
         // Pre-parsed JSON payload
         const recipient = (req.body.to || '').toLowerCase().trim();
         const domain = recipient.split('@')[1];
 
-        if (!db.isDomainAllowed(domain)) {
+        if (domain && !db.isDomainAllowed(domain)) {
           db.addDomain(domain);
         }
+
+        const otpInfo = extractOtpAndLinks(req.body.text || '', req.body.html || '', req.body.subject || '');
 
         const msgData = {
           id: `${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -69,10 +71,23 @@ router.post('/incoming', async (req, res) => {
           date: req.body.date || new Date().toISOString(),
           headers: req.body.headers || {},
           attachments: req.body.attachments || [],
+          otp: req.body.otp || otpInfo.otp || '',
+          code: req.body.code || otpInfo.code || '',
+          verification_code: req.body.verification_code || otpInfo.verification_code || '',
+          verification_link: req.body.verification_link || otpInfo.verification_link || '',
+          links: req.body.links || otpInfo.links || [],
           size: JSON.stringify(req.body).length
         };
 
         const saved = db.saveMessage(msgData);
+        eventBus.notifyNewMail(recipient, saved);
+
+        // Ensure async persistence in cloud KV / Redis before closing Lambda
+        await db.saveAsync();
+
+        return res.json({ success: true, message: 'Message received via JSON webhook', id: saved.id });
+      }
+    }
         eventBus.notifyNewMail(recipient, saved);
 
         return res.json({ success: true, message: 'Message received via JSON webhook', id: saved.id });
