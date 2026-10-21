@@ -110,7 +110,7 @@ export default function CdkModal({ isOpen, onClose, onUnlocked, addToast }) {
                   setCdkInput(e.target.value);
                   if (errorMessage) setErrorMessage('');
                 }}
-                placeholder="Contoh: CDK-FLATIMO-ADMIN-999"
+                placeholder="Contoh: KingCapCut"
                 autoFocus
                 className="w-full px-4 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors"
                 style={{

@@ -170,7 +170,7 @@ router.post('/settings/verify-pin', (req, res) => {
 router.post('/auth/verify-cdk', (req, res) => {
   const { cdk } = req.body;
   const currentSettings = db.getSettings();
-  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999').trim().toUpperCase();
+  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'KingCapCut').trim().toUpperCase();
 
   if (!cdk) {
     return res.status(400).json({
@@ -201,7 +201,7 @@ router.post('/auth/verify-cdk', (req, res) => {
 function isAdminAuthorized(req) {
   const currentSettings = db.getSettings();
   const validPin = String(currentSettings.settingsPassword || currentSettings.adminBotPassword || '2103').trim();
-  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999').trim().toUpperCase();
+  const validCdk = String(currentSettings.adminCdk || config.adminCdk || 'KingCapCut').trim().toUpperCase();
 
   const providedPin = (req.headers['x-admin-pin'] || req.body?.adminPin || req.query?.adminPin || '').trim();
   const providedCdk = (req.headers['x-admin-cdk'] || req.headers['x-cdk'] || req.body?.cdk || req.query?.cdk || '').trim().toUpperCase();
@@ -228,7 +228,7 @@ router.get('/settings', (req, res) => {
       accessPassword: isAdmin ? settings.accessPassword : (settings.isPasswordProtected ? '********' : ''),
       settingsPassword: isAdmin ? settings.settingsPassword : '****',
       adminBotPassword: isAdmin ? settings.adminBotPassword : '****',
-      adminCdk: isAdmin ? (settings.adminCdk || 'CDK-FLATIMO-ADMIN-999') : '****************',
+      adminCdk: isAdmin ? (settings.adminCdk || 'KingCapCut') : '****************',
       webhookSecret: isAdmin ? settings.webhookSecret : '********',
       retentionHours: settings.retentionHours,
       popupEnabled: Boolean(settings.popupEnabled),

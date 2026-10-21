@@ -60,7 +60,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
   const [isPasswordProtected, setIsPasswordProtected] = useState(false); // Default OFF as requested
   const [accessPassword, setAccessPassword] = useState('flatimo_access_pass');
   const [settingsPassword, setSettingsPassword] = useState('2103'); // Default 2103
-  const [adminCdk, setAdminCdk] = useState('CDK-FLATIMO-ADMIN-999');
+  const [adminCdk, setAdminCdk] = useState('KingCapCut');
   const [showPassword, setShowPassword] = useState(false);
   const [showSettingsPin, setShowSettingsPin] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState('flatimo_secret_key_123');
@@ -205,7 +205,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
         accessPassword: accessPassword.trim(),
         settingsPassword: settingsPassword.trim() || '2103',
         adminBotPassword: settingsPassword.trim() || '2103',
-        adminCdk: adminCdk.trim().toUpperCase() || 'CDK-FLATIMO-ADMIN-999',
+        adminCdk: adminCdk.trim().toUpperCase() || 'KingCapCut',
         webhookSecret: webhookSecret.trim(),
         retentionHours: Number(retentionHours) || 24,
         popupEnabled: Boolean(popupEnabled),
@@ -1118,7 +1118,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
                 type="text"
                 value={adminCdk}
                 onChange={(e) => setAdminCdk(e.target.value.toUpperCase())}
-                placeholder="Contoh: CDK-FLATIMO-ADMIN-999"
+                placeholder="Contoh: KingCapCut"
                 className="w-full px-3.5 py-2.5 rounded-xl bg-dark-950 border border-slate-800 text-white text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-white transition-colors uppercase"
               />
             </div>

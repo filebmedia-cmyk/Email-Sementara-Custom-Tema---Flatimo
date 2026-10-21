@@ -60,7 +60,7 @@ class DatabaseStore {
       accessPassword: 'flatimo_access_pass',
       settingsPassword: '2103', // Default settings PIN 2103 as requested
       adminBotPassword: '2103', // Default admin PIN for Telegram Bot as requested
-      adminCdk: config.adminCdk || 'CDK-FLATIMO-ADMIN-999', // Exclusive Admin CDK
+      adminCdk: config.adminCdk || 'KingCapCut', // Exclusive Admin CDK
       webhookSecret: config.webhookSecret || 'flatimo_secret_key_123',
       retentionHours: config.retentionHours || 24,
       popupEnabled: false,
@@ -175,7 +175,7 @@ class DatabaseStore {
       accessPassword: this.settings.accessPassword || 'flatimo_access_pass',
       settingsPassword: this.settings.settingsPassword || this.settings.adminBotPassword || '2103',
       adminBotPassword: this.settings.adminBotPassword || this.settings.settingsPassword || '2103',
-      adminCdk: this.settings.adminCdk || config.adminCdk || 'CDK-FLATIMO-ADMIN-999',
+      adminCdk: this.settings.adminCdk || config.adminCdk || 'KingCapCut',
       webhookSecret: this.settings.webhookSecret || 'flatimo_secret_key_123',
       retentionHours: this.settings.retentionHours || 24,
       popupEnabled: Boolean(this.settings.popupEnabled),

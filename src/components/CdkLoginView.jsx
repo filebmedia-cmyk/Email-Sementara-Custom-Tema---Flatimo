@@ -122,7 +122,7 @@ export default function CdkLoginView({ onUnlocked, onBackHome, addToast }) {
                   setCdkInput(e.target.value.toUpperCase());
                   if (errorMessage) setErrorMessage('');
                 }}
-                placeholder="CDK-FLATIMO-ADMIN-999"
+                placeholder="KingCapCut"
                 autoFocus
                 className="w-full pl-10 pr-4 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors uppercase"
                 style={{
