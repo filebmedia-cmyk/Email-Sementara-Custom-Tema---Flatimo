@@ -16,7 +16,18 @@ const app = express();
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Webhook-Secret', 'X-Forwarded-To', 'X-API-Key', 'api-key']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Webhook-Secret', 
+    'X-Forwarded-To', 
+    'X-Forwarded-From',
+    'X-API-Key', 
+    'api-key', 
+    'X-Client-App', 
+    'X-Admin-PIN', 
+    'X-Admin-CDK'
+  ]
 }));
 
 // Standard JSON parser (for regular API requests)
@@ -39,6 +50,16 @@ app.use((req, res, next) => {
   next();
 });
 
+// Health check endpoint (always accessible)
+app.get(['/api/health', '/api/v1/health'], (req, res) => {
+  res.json({
+    status: 'ok',
+    service: 'Flatimo Mail Engine',
+    time: new Date().toISOString(),
+    uptime: Math.floor(process.uptime()),
+    platform: process.env.VERCEL ? 'vercel-serverless' : 'standalone'
+  });
+});
 
 // Universal API Routes (/api/v1 and legacy /api compatibility for all bots)
 app.use('/api/v1/webhook', webhookRouter);
@@ -48,17 +69,6 @@ app.use('/api/v1', apiRouter);
 app.use('/api/webhook', webhookRouter);
 app.use('/api', streamRouter);
 app.use('/api', apiRouter);
-
-// Health check endpoint
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    service: 'Flatimo Mail Engine',
-    time: new Date().toISOString(),
-    uptime: Math.floor(process.uptime()),
-    platform: process.env.VERCEL ? 'vercel-serverless' : 'standalone'
-  });
-});
 
 // Universal 3rd-Party Temp Mail Bot Root Aliases (1secmail, Mail.tm, CapCut, Telegram Bots)
 app.use((req, res, next) => {

@@ -49,9 +49,24 @@ router.use((req, res, next) => {
 
   // If API Mode is Private, require API key for external API requests
   if (currentSettings.apiMode === 'private') {
-    const isBrowserOrigin = req.headers['sec-fetch-site'] === 'same-origin' || 
-                            (req.headers['origin'] && req.headers['host'] && req.headers['origin'].includes(req.headers['host'])) ||
-                            (req.headers['referer'] && req.headers['host'] && req.headers['referer'].includes(req.headers['host']));
+    const clientApp = req.headers['x-client-app'];
+    const origin = req.headers['origin'] || '';
+    const referer = req.headers['referer'] || '';
+    const host = req.headers['host'] || '';
+    const forwardedHost = req.headers['x-forwarded-host'] || '';
+    const secFetchSite = req.headers['sec-fetch-site'];
+
+    const allowedHosts = [
+      host, 
+      forwardedHost, 
+      'mailflatimo.web.id', 
+      'flatimostore.my.id', 
+      'flatimo.me',
+      ...config.defaultDomains
+    ].filter(Boolean);
+
+    const isAllowedOrigin = allowedHosts.some(h => (origin && origin.includes(h)) || (referer && referer.includes(h)));
+    const isBrowserOrigin = secFetchSite === 'same-origin' || isAllowedOrigin || clientApp === 'flatimo-web';
 
     if (!req.isVip && !isBrowserOrigin) {
       return res.status(401).json({

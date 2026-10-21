@@ -226,6 +226,7 @@ export default {
       // 3. Teruskan ke Webhook Vercel
       const targetWebhook = env.VERCEL_WEBHOOK_URL || DEFAULT_VERCEL_WEBHOOK;
       if (targetWebhook) {
+        const webhookSecret = env.WEBHOOK_SECRET || 'flatimo_secret_key_123';
         try {
           const webhookRes = await fetch(targetWebhook, {
             method: 'POST',
@@ -233,14 +234,31 @@ export default {
               'Content-Type': 'text/plain',
               'X-Forwarded-To': message.to,
               'X-Forwarded-From': message.from,
-              'X-Webhook-Secret': env.WEBHOOK_SECRET || 'flatimo_secret_key_123'
+              'X-Webhook-Secret': webhookSecret
             },
             body: rawEmail
           });
           const resText = await webhookRes.text();
           console.log(`[Worker Webhook Success] Status: ${webhookRes.status}, Response: ${resText}`);
         } catch (postErr) {
-          console.error('[Worker Webhook Error]', postErr.message);
+          console.error('[Worker Webhook Error, sending JSON fallback...]', postErr.message);
+          try {
+            await fetch(targetWebhook, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Webhook-Secret': webhookSecret
+              },
+              body: JSON.stringify({
+                to: recipient,
+                from: parsed.from,
+                subject: parsed.subject,
+                text: parsed.text,
+                html: parsed.html,
+                date: msgData.date
+              })
+            });
+          } catch (e2) {}
         }
       }
 

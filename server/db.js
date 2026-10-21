@@ -21,7 +21,22 @@ async function upstashGet(key) {
       headers: { Authorization: `Bearer ${config.upstashRedisToken}` }
     });
     const data = await res.json();
-    return data.result ? JSON.parse(data.result) : null;
+    if (!data || !data.result) return null;
+    let parsed = data.result;
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {
+        return null;
+      }
+    }
+    // Safely unwrap double-stringified legacy values
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed);
+      } catch (e) {}
+    }
+    return typeof parsed === 'object' ? parsed : null;
   } catch (e) {
     return null;
   }
@@ -30,13 +45,14 @@ async function upstashGet(key) {
 async function upstashSet(key, value) {
   if (!config.upstashRedisUrl || !config.upstashRedisToken) return false;
   try {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
     await fetch(`${config.upstashRedisUrl}/set/${encodeURIComponent(key)}`, {
       method: 'POST',
       headers: { 
         Authorization: `Bearer ${config.upstashRedisToken}`,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(JSON.stringify(value))
+      body: serialized
     });
     return true;
   } catch (e) {
