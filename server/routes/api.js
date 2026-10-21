@@ -200,7 +200,6 @@ router.post('/auth/verify-cdk', (req, res) => {
       success: true,
       authorized: true,
       token: nanoid(32),
-      cdk: validCdk,
       message: 'Akses CDK Eksklusif Berhasil! Akses Panel Admin Terbuka.'
     });
   }
@@ -235,7 +234,7 @@ router.get('/settings', (req, res) => {
   res.json({
     success: true,
     settings: {
-      apiKey: settings.apiKey,
+      apiKey: isAdmin ? settings.apiKey : '********',
       apiMode: settings.apiMode,
       webhookMode: settings.webhookMode,
       httpDocsMode: settings.httpDocsMode,

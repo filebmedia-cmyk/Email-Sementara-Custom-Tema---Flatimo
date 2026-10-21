@@ -182,23 +182,15 @@ export default function Header({
               )}
             </button>
 
-            {/* Discreet CDK Key / Lock Trigger */}
-            {!isAdminUnlocked ? (
-              <button
-                onClick={onOpenCdkModal}
-                title="Aktivasi Akses Admin (CDK)"
-                className="group p-2 sm:p-2.5 rounded-xl bg-dark-900 border border-slate-800 hover:border-slate-700 text-slate-500 hover:text-amber-400 transition-all active:scale-95 cursor-pointer"
-              >
-                <Lock className="w-4 h-4 icon-interactive group-hover:scale-115" />
-              </button>
-            ) : (
+            {/* Admin Lock / Exit button (Only shown when Admin is logged in) */}
+            {isAdminUnlocked && (
               <button
                 onClick={onLockAdmin}
                 title="Kunci Kembali Akses Admin (Keluar)"
                 className="group flex items-center gap-1 px-2.5 py-1.5 sm:py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs font-bold transition-all active:scale-95 cursor-pointer hover:bg-rose-500/20"
               >
                 <Unlock className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Kunci</span>
+                <span className="hidden sm:inline">Kunci Admin</span>
               </button>
             )}
 

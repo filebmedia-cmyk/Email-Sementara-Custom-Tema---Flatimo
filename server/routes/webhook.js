@@ -88,11 +88,6 @@ router.post('/incoming', async (req, res) => {
         return res.json({ success: true, message: 'Message received via JSON webhook', id: saved.id });
       }
     }
-        eventBus.notifyNewMail(recipient, saved);
-
-        return res.json({ success: true, message: 'Message received via JSON webhook', id: saved.id });
-      }
-    }
 
     if (!rawEmail) {
       return res.status(400).json({ success: false, error: 'No readable email payload found in request' });

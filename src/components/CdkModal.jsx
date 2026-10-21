@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { KeyRound, ShieldAlert, Check, X, Sparkles, Lock, ArrowRight } from 'lucide-react';
+import { KeyRound, ShieldAlert, Check, X, Sparkles, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { verifyCdk } from '../utils/api';
 
 export default function CdkModal({ isOpen, onClose, onUnlocked, addToast }) {
   const { primaryColor, secondaryColor, glowEnabled } = useTheme();
   const [cdkInput, setCdkInput] = useState('');
+  const [showCdk, setShowCdk] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -104,19 +105,27 @@ export default function CdkModal({ isOpen, onClose, onUnlocked, addToast }) {
           <div>
             <div className="relative">
               <input
-                type="text"
+                type={showCdk ? "text" : "password"}
                 value={cdkInput}
                 onChange={(e) => {
-                  setCdkInput(e.target.value);
+                  setCdkInput(e.target.value.toUpperCase());
                   if (errorMessage) setErrorMessage('');
                 }}
-                placeholder="Contoh: KingCapCut"
+                placeholder="Masukkan Kode CDK..."
                 autoFocus
-                className="w-full px-4 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors"
+                className="w-full pl-4 pr-11 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors uppercase"
                 style={{
                   borderColor: errorMessage ? '#ef4444' : `${primaryColor}40`
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowCdk(!showCdk)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white transition-colors cursor-pointer"
+                title={showCdk ? "Sembunyikan CDK" : "Tampilkan CDK"}
+              >
+                {showCdk ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             {errorMessage && (
               <p className="text-xs text-red-400 mt-2 flex items-center justify-center gap-1 text-center font-medium">

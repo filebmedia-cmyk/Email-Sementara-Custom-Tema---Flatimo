@@ -63,6 +63,7 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
   const [adminCdk, setAdminCdk] = useState('KingCapCut');
   const [showPassword, setShowPassword] = useState(false);
   const [showSettingsPin, setShowSettingsPin] = useState(false);
+  const [showAdminCdk, setShowAdminCdk] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState('flatimo_secret_key_123');
   const [retentionHours, setRetentionHours] = useState(24);
 
@@ -1115,12 +1116,20 @@ export default function SettingsView({ addToast, onSettingsUpdated, onDomainsCha
 
             <div className="relative">
               <input
-                type="text"
+                type={showAdminCdk ? "text" : "password"}
                 value={adminCdk}
                 onChange={(e) => setAdminCdk(e.target.value.toUpperCase())}
-                placeholder="Contoh: KingCapCut"
-                className="w-full px-3.5 py-2.5 rounded-xl bg-dark-950 border border-slate-800 text-white text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-white transition-colors uppercase"
+                placeholder="Kunci Lisensi CDK..."
+                className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-dark-950 border border-slate-800 text-white text-xs font-mono font-bold tracking-wider focus:outline-none focus:border-white transition-colors uppercase"
               />
+              <button
+                type="button"
+                onClick={() => setShowAdminCdk(!showAdminCdk)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-500 hover:text-white transition-colors cursor-pointer"
+                title={showAdminCdk ? "Sembunyikan CDK" : "Tampilkan CDK"}
+              >
+                {showAdminCdk ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
             <p className="text-[11px] text-slate-500">
               Hanya orang yang memiliki kode CDK ini yang dapat membuka menu admin. Orang lain yang membuka web Anda tidak akan melihat menu admin sama sekali.

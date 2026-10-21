@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { KeyRound, ShieldAlert, Lock, ArrowRight, ArrowLeft, ShieldCheck, Sparkles } from 'lucide-react';
+import { KeyRound, ShieldAlert, Lock, ArrowRight, ArrowLeft, ShieldCheck, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { verifyCdk } from '../utils/api';
 
 export default function CdkLoginView({ onUnlocked, onBackHome, addToast }) {
   const { primaryColor, secondaryColor, glowEnabled, siteTitle } = useTheme();
   const [cdkInput, setCdkInput] = useState('');
+  const [showCdk, setShowCdk] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
@@ -116,19 +117,27 @@ export default function CdkLoginView({ onUnlocked, onBackHome, addToast }) {
                 <KeyRound className="w-4 h-4" style={{ color: primaryColor }} />
               </div>
               <input
-                type="text"
+                type={showCdk ? "text" : "password"}
                 value={cdkInput}
                 onChange={(e) => {
                   setCdkInput(e.target.value.toUpperCase());
                   if (errorMessage) setErrorMessage('');
                 }}
-                placeholder="KingCapCut"
+                placeholder="Masukkan Kode CDK..."
                 autoFocus
-                className="w-full pl-10 pr-4 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors uppercase"
+                className="w-full pl-10 pr-11 py-3 rounded-2xl bg-dark-950 border text-center text-white text-sm font-mono font-bold tracking-wider placeholder:text-slate-600 focus:outline-none transition-colors uppercase"
                 style={{
                   borderColor: errorMessage ? '#ef4444' : `${primaryColor}40`
                 }}
               />
+              <button
+                type="button"
+                onClick={() => setShowCdk(!showCdk)}
+                className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-500 hover:text-white transition-colors cursor-pointer"
+                title={showCdk ? "Sembunyikan CDK" : "Tampilkan CDK"}
+              >
+                {showCdk ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
             </div>
 
             {errorMessage && (
