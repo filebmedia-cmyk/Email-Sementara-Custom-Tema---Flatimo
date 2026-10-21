@@ -333,6 +333,11 @@ class DatabaseStore {
       attachments: msg.attachments || [],
       size: msg.size || 0,
       read: false,
+      otp: msg.otp || '',
+      code: msg.code || msg.otp || '',
+      verification_code: msg.verification_code || msg.otp || '',
+      verification_link: msg.verification_link || '',
+      links: msg.links || [],
       createdAt: new Date().toISOString()
     };
 
@@ -372,6 +377,10 @@ class DatabaseStore {
           read: msg.read,
           hasAttachments: msg.attachments && msg.attachments.length > 0,
           attachmentCount: (msg.attachments || []).length,
+          otp: msg.otp || '',
+          code: msg.code || msg.otp || '',
+          verification_code: msg.verification_code || msg.otp || '',
+          verification_link: msg.verification_link || '',
           size: msg.size,
           createdAt: msg.createdAt
         });
